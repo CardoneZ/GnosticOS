@@ -19,6 +19,7 @@ import {
   Feather,
   ShieldAlert,
   Crown,
+  Orbit,
 } from 'lucide-react';
 import { HERMETIC_CHAPTERS } from '../hermetica/hermeticCorpus';
 
@@ -188,6 +189,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         icon: Flame,
         onSelect: () => {
           onNavigate('meditation');
+          onClose();
+        },
+      },
+      {
+        id: 'nav-astrolabe',
+        category: 'tool',
+        title: 'Natal Astrolabe & Esoteric Currents',
+        subtitle: 'Crowley Thoth Atu, 72 Goetic Decan Quinances, Tunnels of Set & Gematria',
+        badge: 'Crowley·72',
+        icon: Orbit,
+        onSelect: () => {
+          onNavigate('astrolabe');
           onClose();
         },
       },

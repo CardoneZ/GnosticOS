@@ -12,6 +12,7 @@ import GrimoireLibrary from './features/grimoire/GrimoireLibrary';
 import HermeticaWorkbench from './features/hermetica/HermeticaWorkbench';
 import LuciferMeditation from './features/meditation/LuciferMeditation';
 import IlluminationWorkbench from './features/illumination/IlluminationWorkbench';
+import NatalAstrolabe from './features/astrolabe/NatalAstrolabe';
 import CommandPalette from './features/navigation/CommandPalette';
 import { GrimoireEntity } from './db/grimoireSeeds';
 import { emergencyGroundAudio } from './features/audio/audioManager';
@@ -235,6 +236,19 @@ export const App: React.FC = () => {
         )}
 
         {currentView === 'meditation' && <LuciferMeditation />}
+
+        {currentView === 'astrolabe' && (
+          <NatalAstrolabe
+            onTuneToPortal={handleTuneSpiritToPortal}
+            onNavigateToChaos={(intent) => {
+              if (intent) setSigilDraftIntent(intent);
+              setCurrentView('chaos');
+            }}
+            onSendToJournal={handleHermeticSendToJournal}
+            onNavigateToMeditation={() => setCurrentView('meditation')}
+            onNavigateToTree={() => setCurrentView('tree')}
+          />
+        )}
 
         {currentView === 'illumination' && (
           <IlluminationWorkbench

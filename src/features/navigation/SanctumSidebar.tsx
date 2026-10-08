@@ -15,12 +15,14 @@ import {
   Command,
   Feather,
   Sun,
+  Orbit,
 } from 'lucide-react';
 import { getCurrentMagickalTiming, MagickalTiming } from '../ephemeris/planetaryHours';
 
 export type ActiveView =
   | 'portal'
   | 'meditation'
+  | 'astrolabe'
   | 'illumination'
   | 'hermetica'
   | 'tablets'
@@ -59,6 +61,7 @@ export const SanctumSidebar: React.FC<SanctumSidebarProps> = ({
   const navItems = [
     { id: 'portal', label: 'Gazing Portal', icon: Eye, badge: 'WebGL' },
     { id: 'meditation', label: 'Lucifer Meditation', icon: Sun, badge: '5 min' },
+    { id: 'astrolabe', label: 'Natal Astrolabe', icon: Orbit, badge: 'Crowley·72' },
     { id: 'illumination', label: 'Illumination Forge', icon: Flame, badge: 'Will·Desire' },
     { id: 'hermetica', label: 'The Hermetica', icon: Feather, badge: 'Thoth' },
     { id: 'tablets', label: '9x9 Tablet Forge', icon: Compass, badge: 'Connolly' },
