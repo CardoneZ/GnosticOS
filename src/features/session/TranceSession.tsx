@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import GazingCircleCanvas, { BreathPhase } from '../gazing/GazingCircleCanvas';
 import { useGazingAudio, parseNote, NoteName } from '../audio/useGazingAudio';
+import { getBrainwaveBand, QUICK_BRAINWAVE_PRESETS } from '../audio/brainwaveConstants';
 import { TunnelData, JournalEntryData, saveJournalEntry } from '../../platform/vault';
 import { getCurrentMagickalTiming } from '../ephemeris/planetaryHours';
 import {
@@ -290,32 +291,66 @@ export const TranceSession: React.FC<TranceSessionProps> = ({
 
           {/* Audio Presets */}
           <div className="flex flex-col gap-3 text-xs font-mono bg-black/60 p-3.5 rounded-xl border border-neutral-800">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <span className="text-[10px] text-neutral-500 block">SONIC KEY DRONE</span>
-                <span className="text-purple-300 font-bold">{parsedKey}</span> ({keyFrequency.toFixed(1)} Hz)
-              </div>
-              <div>
-                <span className="text-[10px] text-neutral-500 block">BINAURAL BEAT</span>
-                <span className="text-amber-400 font-bold">{binauralBeatHz} Hz (Theta)</span>
-              </div>
-            </div>
+            {(() => {
+              const band = getBrainwaveBand(binauralBeatHz);
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-[10px] text-neutral-500 block">SONIC KEY DRONE</span>
+                      <span className="text-purple-300 font-bold">{parsedKey}</span> ({keyFrequency.toFixed(1)} Hz)
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-neutral-500 block">BINAURAL BEAT</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-amber-400 font-bold">{binauralBeatHz.toFixed(1)} Hz</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${band.badgeClass}`}>
+                          {band.label}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-            <div className="flex flex-col gap-1 pt-2 border-t border-neutral-850">
-              <div className="flex justify-between text-[11px] text-neutral-400">
-                <span>Binaural Offset</span>
-                <span>{binauralBeatHz.toFixed(1)} Hz</span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="16"
-                step="0.5"
-                value={binauralBeatHz}
-                onChange={(e) => setBinauralBeatHz(Number(e.target.value))}
-                className="w-full accent-purple-500 cursor-pointer"
-              />
-            </div>
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-neutral-850">
+                    <div className="flex justify-between text-[11px] text-neutral-400">
+                      <span>Binaural Offset</span>
+                      <span className="text-amber-300 font-bold">{binauralBeatHz.toFixed(1)} Hz ({band.name})</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="100"
+                      step="0.5"
+                      value={binauralBeatHz}
+                      onChange={(e) => setBinauralBeatHz(Number(e.target.value))}
+                      className="w-full accent-amber-500 cursor-pointer"
+                    />
+                    <div className="grid grid-cols-6 gap-1 text-[10px] font-mono mt-1">
+                      {QUICK_BRAINWAVE_PRESETS.map((p) => {
+                        const isSelected = Math.abs(binauralBeatHz - p.hz) < 0.2;
+                        return (
+                          <button
+                            key={p.hz}
+                            onClick={() => setBinauralBeatHz(p.hz)}
+                            className={`py-1 rounded text-center transition-all ${
+                              isSelected
+                                ? p.highlight
+                                  ? 'bg-amber-900 border border-amber-400 text-amber-200 font-bold shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                  : 'bg-purple-900 border border-purple-400 text-purple-200 font-bold'
+                                : p.highlight
+                                ? 'bg-amber-950/40 border border-amber-800/60 text-amber-400/90 hover:bg-amber-900/50'
+                                : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                            }`}
+                          >
+                            {p.short}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             <div className="flex flex-col gap-1">
               <div className="flex justify-between text-[11px] text-neutral-400">

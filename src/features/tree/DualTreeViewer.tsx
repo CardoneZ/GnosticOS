@@ -1,7 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TunnelData, EntityData, SEED_TUNNELS } from '../../platform/vault';
 import { AlbTalisman, LuciferSigil } from './LuciferianSymbols';
-import { playEnnChantTone, emergencyGroundAudio } from '../audio/audioManager';
+import {
+  playEnnChantTone,
+  emergencyGroundAudio,
+  startSphericResonator,
+} from '../audio/audioManager';
+import {
+  getBrainwaveBand,
+  QUICK_BRAINWAVE_PRESETS,
+} from '../audio/brainwaveConstants';
 import {
   Network,
   ArrowUpRight,
@@ -18,6 +26,8 @@ import {
   Info,
   Table,
   X,
+  Headphones,
+  Radio,
 } from 'lucide-react';
 
 interface DualTreeViewerProps {
@@ -56,6 +66,9 @@ export interface SephiraNode {
   tools: string;
   gems: string;
   element: string;
+  brainwaveHz: number;
+  brainwaveBand: string;
+  brainwaveTitle: string;
   description: string;
   studyLore: string;
   practicalExercise: string;
@@ -88,6 +101,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Crown, Swastika, Double Scythe',
     gems: 'Diamond, Black Diamond, Pure Quartz',
     element: 'All / Quintessence (The Source)',
+    brainwaveHz: 40.0,
+    brainwaveBand: 'Gamma',
+    brainwaveTitle: '40 Hz Gamma (Crown Illumination & Twin Godheads)',
     description: 'The supreme summit of consciousness and source from which all energy flows.',
     studyLore:
       'In Kabbalah, Kether is the primordial point of light (Ehyeh Asher Ehyeh). In Demonolatry (S. Connolly, p. 256), Satan is Kether (The Crown)—the Whole and fifth element (Spirit/Acasual) consisting of all elements and alchemical transmutations. On the Nightside, Thaumiel represents the twin heads of duality in eternal revolt against tyrannical dogma.',
@@ -120,6 +136,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Inner Phallus, Wand of Light, Eagle Sigil',
     gems: 'Star Ruby, Turquoise, Dark Jet',
     element: 'Air / Luminous Fire',
+    brainwaveHz: 40.0,
+    brainwaveBand: 'Gamma',
+    brainwaveTitle: '40 Hz Gamma (Luciferian Wisdom & Morning Star Flash)',
     description: 'The active masculine energy of illumination, enlightenment, and creative gnosis.',
     studyLore:
       'Chokmah is primordial dynamic wisdom. In Connolly’s Tree (p. 256), Lucifer is Air and Wisdom: "being able to see the whole in conjunction with the sum of its parts in order to reach gnosis." In Michael W. Ford’s Apotheosis, Lucifer is the Morning Star (Eosphoros) igniting the Black Flame. On the Nightside, Ghagiel (Chaigidel) is ruled by Beelzebub, tearing down dogmatic illusions.',
@@ -152,6 +171,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Cup of Understanding, Cowl-Cloak, Crystal Wand',
     gems: 'Black Pearl, Star Sapphire, Jet',
     element: 'Vapor (Fire transformed Water)',
+    brainwaveHz: 5.5,
+    brainwaveBand: 'Theta',
+    brainwaveTitle: '5.5 Hz Theta (Womb of Understanding & Primordial Sea)',
     description: 'The Great Sea of the unconscious, womb of mysteries, and fertile sorcery.',
     studyLore:
       'Binah is the cosmic womb (Aimah Elohim). Unsere in Binah (Connolly, p. 256) is Vapor/Steam, representing feminine understanding and emotional roots. On the Nightside, Satariel is ruled by Lucifuge Rofocale, guarding the dark labyrinth of primal shadows and concealed wealth.',
@@ -184,6 +206,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Pylon Key, Sickle of Daäth, Black Mirror',
     gems: 'Chrysoberyl, Black Opal, Moldavite',
     element: 'Spiritual Breath / Void',
+    brainwaveHz: 100.0,
+    brainwaveBand: 'Lambda',
+    brainwaveTitle: '100 Hz Lambda (Trans-Abyssal Threshold & 333 Void)',
     description: 'The invisible threshold and cosmic axis through which the Dayside Tree flips into the Nightside Qliphoth.',
     studyLore:
       'Daäth is the non-Sephira, the invisible abyss (Connolly p. 257). It is the threshold between the conscious mind and the 22 Tunnels of Set. On the Nightside, Choronzon (Guardian of 333) tests the adept’s ego, while Belial enforces absolute independence and sovereignty.',
@@ -216,6 +241,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Sceptre, Healing Lancet, Wand',
     gems: 'Sapphire, Amethyst, Lapis Lazuli',
     element: 'Cold (Water transformed Earth)',
+    brainwaveHz: 10.0,
+    brainwaveBand: 'Alpha',
+    brainwaveTitle: '10 Hz Alpha (Regal Sovereign Equilibrium & Expansion)',
     description: 'Divinity of health, restorative mercy, and regenerative alchemical transmutation.',
     studyLore:
       'In Connolly’s framework (p. 256), Verrine is Chesed: Cold (Water transformed Earth). Emotional stability breeds intuition and physical recovery. On the Nightside, Gha’agsheblah (Gamchicoth) is governed by Astaroth, devouring outmoded forms and false orthodoxies.',
@@ -248,6 +276,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Dagger, Serpent Wand, Pentagram Bowl',
     gems: 'Ruby, Garnet, Bloodstone',
     element: 'Water / Primordial Sea',
+    brainwaveHz: 24.0,
+    brainwaveBand: 'Beta',
+    brainwaveTitle: '24 Hz Beta (Martial Severance & Wrath of Asmodeus)',
     description: 'The raging ocean of will, emotional discernment, martial resistance, and unyielding defense.',
     studyLore:
       'Leviathan in Geburah (Connolly p. 256) is emotional and mental strength through water. In Ford’s Apotheosis, Leviathan is the Ouroboros encircling the circumference of the Living Temple. On the Nightside, Golachab is ruled by Asmodeus (King of Wrath & Desire), testing the initiate in the fires of discipline.',
@@ -280,6 +311,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Lamen, Rosy Cross, Altar Trivet',
     gems: 'Topaz, Yellow Diamond, Golden Pyrite',
     element: 'Earth / Soil',
+    brainwaveHz: 40.0,
+    brainwaveBand: 'Gamma',
+    brainwaveTitle: '40 Hz Gamma (Solar Illumination & Black Sun Sol Niger)',
     description: 'Lord of the physical foundation, beauty in matter, sovereignty, and independence.',
     studyLore:
       'Belial sits at Tiphareth (Connolly, p. 256), the solar heart center connecting physical and spiritual. Belial means "without a master"—absolute self-rule. On the Nightside, Thagirion represents the Black Sun (Sol Niger) and the number 666 (Sorath), where inner illumination burns away outer dependency.',
@@ -312,6 +346,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Girdle, War Horn, Brass Lamp',
     gems: 'Emerald, Malachite, Jade',
     element: 'Heat (Air transformed Fire)',
+    brainwaveHz: 8.0,
+    brainwaveBand: 'Alpha',
+    brainwaveTitle: '8 Hz Alpha (Venusian Astral Passion & Ecstasy)',
     description: 'Master of negative polarity, destructive force directed by will, martial victory and music.',
     studyLore:
       'Amducious in Netzach (Connolly p. 256) is Heat: the victory of will over inertia and physical limits. On the Nightside, A’arab Zaraq (Ravens of Dispersion) is ruled by Baal (Bael), teaching the adept to detach from petty social conditioning like ravens soaring over battlefields.',
@@ -344,6 +381,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Book of the Dead, Mortar, Cursing Cord',
     gems: 'Opal, Agate, Carnelian',
     element: 'Dry (Earth transformed Air)',
+    brainwaveHz: 18.0,
+    brainwaveBand: 'Beta',
+    brainwaveTitle: '18 Hz Beta (Mercurial Intellect & Adrammelech Discernment)',
     description: 'Keeper of death, transformation of consciousness, intellect, and honorable ancestral memory.',
     studyLore:
       'In Kabbalah, Hod represents the intellect and formal splendor. In Connolly (p. 255), Eurynomous in Hod represents the splendor of transformation: shedding worn-out vehicles for higher rebirth. On the Nightside, Samael (Gematria 131: סמאל) is the "Poison of God" ruled by Adrammelech (Peacock King). It dissolves rigid theological dogmas and tests the adept’s mental sharpness.',
@@ -376,6 +416,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Baphometic Fire Font, Perfume Bowl',
     gems: 'Moonstone, Quartz, Hematite',
     element: 'Fire / Phoenix Flame',
+    brainwaveHz: 6.0,
+    brainwaveBand: 'Theta',
+    brainwaveTitle: '6 Hz Theta (Astral Gate, Lunar Hypnagogia & Lilith Trance)',
     description: 'The foundation of vital fire, the Phoenix rising from the ashes, astral navigation, and nocturnal passion.',
     studyLore:
       'Yesod is the astral foundation. Flereous in Yesod (Connolly p. 255) is the Foundation in Fire: vitality, primal passion, and the Phoenix rising from ashes. On the Nightside, Gamaliel (Gematria 114) is ruled by Lilith, Queen of the Night, governing astral dream incubations and sexual mysteries.',
@@ -408,6 +451,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     tools: 'Altar of Earth, Double Cube, Bone Blade',
     gems: 'Rock Crystal, Smoky Quartz, Obsidian',
     element: 'Earth / Physical Flesh',
+    brainwaveHz: 2.5,
+    brainwaveBand: 'Delta',
+    brainwaveTitle: '2.5 Hz Delta (Telluric Earth & Somatic Grounding)',
     description: 'The physical vessel and living temple through which the Divine is made manifest.',
     studyLore:
       'In Kabbalah, Malkuth is the physical world and Shekhinah. In Connolly’s Demonolatry Tree (p. 255), Malkuth is THE SELF: "We are the physical manifestations of the divine." You start at 10 (The Self) and ascend to 1 (Kether) through self-directed initiation. On the Nightside, Nahemoth is ruled by Naamah, awakening carnal sensory gnosis in the physical flesh.',
@@ -463,11 +509,16 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
   const [activeTab, setActiveTab] = useState<'node' | 'tunnel' | 'alb' | 'study'>('node');
   const [isMatrixOpen, setIsMatrixOpen] = useState<boolean>(false);
   const [playingEnnNote, setPlayingEnnNote] = useState<string | null>(null);
+  const [activeEntrainHz, setActiveEntrainHz] = useState<number>(40.0);
+  const [playingDroneSphereId, setPlayingDroneSphereId] = useState<number | null>(null);
+  const [playingDroneTunnelId, setPlayingDroneTunnelId] = useState<number | null>(null);
   const stopEnnAudioRef = useRef<(() => void) | null>(null);
+  const stopDroneAudioRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     return () => {
       if (stopEnnAudioRef.current) stopEnnAudioRef.current();
+      if (stopDroneAudioRef.current) stopDroneAudioRef.current();
       emergencyGroundAudio();
     };
   }, []);
@@ -479,6 +530,12 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
       setPlayingEnnNote(null);
       return;
     }
+    if (stopDroneAudioRef.current) {
+      stopDroneAudioRef.current();
+      stopDroneAudioRef.current = null;
+      setPlayingDroneSphereId(null);
+      setPlayingDroneTunnelId(null);
+    }
     setPlayingEnnNote(noteKey);
     stopEnnAudioRef.current = playEnnChantTone(
       noteKey,
@@ -486,6 +543,47 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
       () => setPlayingEnnNote(null),
       spokenEnn
     );
+  };
+
+  const handleToggleSphereDrone = (node: SephiraNode) => {
+    if (playingDroneSphereId === node.id) {
+      if (stopDroneAudioRef.current) stopDroneAudioRef.current();
+      stopDroneAudioRef.current = null;
+      setPlayingDroneSphereId(null);
+      return;
+    }
+    if (stopDroneAudioRef.current) stopDroneAudioRef.current();
+    if (stopEnnAudioRef.current) stopEnnAudioRef.current();
+    setPlayingEnnNote(null);
+    setPlayingDroneTunnelId(null);
+    setPlayingDroneSphereId(node.id);
+    stopDroneAudioRef.current = startSphericResonator(node.musicalKey, activeEntrainHz, 0.28);
+  };
+
+  const handleToggleTunnelDrone = (tunnel: TunnelData) => {
+    if (playingDroneTunnelId === tunnel.id) {
+      if (stopDroneAudioRef.current) stopDroneAudioRef.current();
+      stopDroneAudioRef.current = null;
+      setPlayingDroneTunnelId(null);
+      return;
+    }
+    if (stopDroneAudioRef.current) stopDroneAudioRef.current();
+    if (stopEnnAudioRef.current) stopEnnAudioRef.current();
+    setPlayingEnnNote(null);
+    setPlayingDroneSphereId(null);
+    setPlayingDroneTunnelId(tunnel.id);
+    stopDroneAudioRef.current = startSphericResonator(tunnel.musical_key, activeEntrainHz, 0.28);
+  };
+
+  const handleSetEntrainHz = (hz: number) => {
+    setActiveEntrainHz(hz);
+    if (playingDroneSphereId !== null && selectedNode) {
+      if (stopDroneAudioRef.current) stopDroneAudioRef.current();
+      stopDroneAudioRef.current = startSphericResonator(selectedNode.musicalKey, hz, 0.28);
+    } else if (playingDroneTunnelId !== null && selectedTunnel) {
+      if (stopDroneAudioRef.current) stopDroneAudioRef.current();
+      stopDroneAudioRef.current = startSphericResonator(selectedTunnel.musical_key, hz, 0.28);
+    }
   };
 
   // Smooth Horizontal 3D Flip (keeps vertical orientation correct)
@@ -502,6 +600,7 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
 
   const handleSelectNode = (node: SephiraNode) => {
     setSelectedNode(node);
+    setActiveEntrainHz(node.brainwaveHz);
     setActiveTab('node');
   };
 
@@ -1120,8 +1219,79 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                   </div>
                 </div>
 
+                {/* Binaural Entrainment & Harmonic Resonator Station */}
+                <div className="p-3.5 rounded-xl bg-black/80 border border-neutral-800 flex flex-col gap-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase text-amber-400 font-bold flex items-center gap-1.5">
+                      <Headphones className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Binaural Entrainment Station</span>
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded border font-mono ${getBrainwaveBand(activeEntrainHz).badgeClass}`}>
+                      {getBrainwaveBand(activeEntrainHz).name} {activeEntrainHz === 40 ? '★' : ''} ({activeEntrainHz.toFixed(1)} Hz)
+                    </span>
+                  </div>
+
+                  {/* 6 Quick Presets covering Delta through 40Hz Gamma to 100Hz Lambda */}
+                  <div className="grid grid-cols-6 gap-1 text-[10px] font-mono">
+                    {QUICK_BRAINWAVE_PRESETS.map((p) => {
+                      const isSelected = Math.abs(activeEntrainHz - p.hz) < 0.2;
+                      return (
+                        <button
+                          key={p.hz}
+                          onClick={() => handleSetEntrainHz(p.hz)}
+                          className={`py-1 rounded text-center transition-all ${
+                            isSelected
+                              ? p.highlight
+                                ? 'bg-amber-900 border border-amber-400 text-amber-200 font-bold shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                                : 'bg-purple-900 border border-purple-400 text-purple-200 font-bold'
+                              : p.highlight
+                              ? 'bg-amber-950/40 border border-amber-800/60 text-amber-400/90 hover:bg-amber-900/50'
+                              : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          {p.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[10px] text-neutral-400 font-sans leading-relaxed">
+                    <strong className="text-amber-300 font-mono">{getBrainwaveBand(activeEntrainHz).label}:</strong> {getBrainwaveBand(activeEntrainHz).occultSignificance}
+                  </p>
+
+                  <button
+                    onClick={() => handleToggleSphereDrone(selectedNode)}
+                    className={`w-full py-2.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+                      playingDroneSphereId === selectedNode.id
+                        ? 'bg-amber-600 text-white shadow-[0_0_15px_rgba(245,158,11,0.6)] animate-pulse'
+                        : 'bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-200'
+                    }`}
+                  >
+                    {playingDroneSphereId === selectedNode.id ? (
+                      <>
+                        <VolumeX className="w-3.5 h-3.5" />
+                        <span>Silence Continuous Resonator</span>
+                      </>
+                    ) : (
+                      <>
+                        <Radio className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Sustain Harmonic Drone ({selectedNode.musicalKey} + {activeEntrainHz.toFixed(1)} Hz)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
                 {/* Grid Metrics */}
                 <div className="grid grid-cols-2 gap-2 bg-neutral-900/60 p-3 rounded-xl border border-neutral-800 text-xs font-mono">
+                  <div className="col-span-2 flex items-center justify-between p-2 rounded-lg bg-black/60 border border-neutral-800">
+                    <div>
+                      <span className="text-neutral-500 text-[10px] block">RESONANT BRAINWAVE</span>
+                      <span className="text-amber-300 font-bold text-xs">{selectedNode.brainwaveTitle}</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded border font-mono ${getBrainwaveBand(selectedNode.brainwaveHz).badgeClass}`}>
+                      {selectedNode.brainwaveBand} {selectedNode.brainwaveHz === 40 ? '★' : ''}
+                    </span>
+                  </div>
                   <div>
                     <span className="text-neutral-500 text-[10px] block">ELEMENT / REALM</span>
                     <span className="text-neutral-200 font-semibold">{selectedNode.element}</span>
@@ -1195,6 +1365,63 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                     <span className="text-neutral-500 text-[10px] block">TEXTURE</span>
                     <span className="text-neutral-300 capitalize">{selectedTunnel.key_modifier || 'Pure Drone'}</span>
                   </div>
+                </div>
+
+                {/* Tunnel Resonant Frequency Station */}
+                <div className="p-3.5 rounded-xl bg-black/80 border border-purple-900/40 flex flex-col gap-2.5 text-xs font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-purple-300 font-bold flex items-center gap-1.5 uppercase">
+                      <Headphones className="w-3.5 h-3.5 text-purple-400" />
+                      <span>Tunnel Resonant Frequency</span>
+                    </span>
+                    <span className="text-amber-400 font-bold">
+                      Key of {selectedTunnel.musical_key} · {activeEntrainHz.toFixed(1)} Hz ({getBrainwaveBand(activeEntrainHz).name})
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-6 gap-1 text-[10px] font-mono">
+                    {QUICK_BRAINWAVE_PRESETS.map((p) => {
+                      const isSelected = Math.abs(activeEntrainHz - p.hz) < 0.2;
+                      return (
+                        <button
+                          key={p.hz}
+                          onClick={() => handleSetEntrainHz(p.hz)}
+                          className={`py-1 rounded text-center transition-all ${
+                            isSelected
+                              ? p.highlight
+                                ? 'bg-amber-900 border border-amber-400 text-amber-200 font-bold shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                                : 'bg-purple-900 border border-purple-400 text-purple-200 font-bold'
+                              : p.highlight
+                              ? 'bg-amber-950/40 border border-amber-800/60 text-amber-400/90 hover:bg-amber-900/50'
+                              : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          {p.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => handleToggleTunnelDrone(selectedTunnel)}
+                    className={`w-full py-2 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+                      playingDroneTunnelId === selectedTunnel.id
+                        ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.6)] animate-pulse'
+                        : 'bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-neutral-200'
+                    }`}
+                  >
+                    {playingDroneTunnelId === selectedTunnel.id ? (
+                      <>
+                        <VolumeX className="w-3.5 h-3.5" />
+                        <span>Silence Tunnel Drone</span>
+                      </>
+                    ) : (
+                      <>
+                        <Radio className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Sustain Tunnel Drone ({selectedTunnel.musical_key} + {activeEntrainHz.toFixed(1)} Hz)</span>
+                      </>
+                    )}
+                  </button>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-900/40 text-xs font-sans text-neutral-300 leading-relaxed">
@@ -1366,6 +1593,7 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                       <th className="py-3 px-4 text-amber-400/80">Archangel & Divine Name</th>
                       <th className="py-3 px-4 text-purple-300">Nightside Qlipha</th>
                       <th className="py-3 px-4 text-purple-400/80">Ruling Arch-Demon</th>
+                      <th className="py-3 px-4 text-amber-300">Brainwave Entrainment</th>
                       <th className="py-3 px-4 text-red-300">Demonic Enn & Chant</th>
                       <th className="py-3 px-3 text-center">Action</th>
                     </tr>
@@ -1448,6 +1676,19 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                             </div>
                             <div className="text-neutral-500 text-[10px] mt-0.5">
                               Note Key: <span className="text-amber-400">{node.musicalKey}</span>
+                            </div>
+                          </td>
+
+                          {/* Brainwave Entrainment */}
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${getBrainwaveBand(node.brainwaveHz).badgeClass}`}>
+                                {node.brainwaveBand} {node.brainwaveHz === 40 ? '★' : ''}
+                              </span>
+                              <span className="text-amber-300 font-bold text-[10px]">{node.brainwaveHz} Hz</span>
+                            </div>
+                            <div className="text-[9px] text-neutral-400 mt-0.5 max-w-[140px] truncate">
+                              {node.brainwaveTitle.split('(')[1]?.replace(')', '') || node.brainwaveBand}
                             </div>
                           </td>
 

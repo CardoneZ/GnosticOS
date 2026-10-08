@@ -21,6 +21,7 @@ import {
 import { AudioVisualizerCanvas } from '../audio/AudioVisualizerCanvas';
 import { SonicCodexModal } from '../audio/SonicCodexModal';
 import SacredSigil, { GOETIA_SVG_MAP } from '../sigils/SacredSigil';
+import { getBrainwaveBand, QUICK_BRAINWAVE_PRESETS } from '../audio/brainwaveConstants';
 import {
   Play,
   Square,
@@ -752,16 +753,17 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
             </div>
             <div>
               <span className="text-neutral-500 block text-[10px]">BINAURAL BEAT</span>
-              <span className="text-amber-400 font-bold">{activeBeatHz.toFixed(1)} Hz</span>{' '}
-              <span className="text-[10px] text-amber-300">
-                {activeBeatHz <= 4
-                  ? '(Delta Void)'
-                  : activeBeatHz <= 7.5
-                  ? '(Theta Gnosis)'
-                  : activeBeatHz <= 12
-                  ? '(Alpha Focus)'
-                  : '(Beta)'}
-              </span>
+              {(() => {
+                const band = getBrainwaveBand(activeBeatHz);
+                return (
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-amber-400 font-bold">{activeBeatHz.toFixed(1)} Hz</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded border font-mono ${band.badgeClass}`}>
+                      {band.name} {band.hz === 40 ? '★' : ''}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -795,29 +797,72 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
             </div>
           </div>
 
-          {/* Binaural Beat Offset Slider */}
+          {/* Binaural Beat Offset Slider & Spectrum Presets */}
           <div>
-            <div className="flex justify-between text-xs font-mono text-neutral-300 mb-1">
-              <span className="flex items-center gap-1">
-                <Headphones className="w-3 h-3 text-amber-400" />
-                Binaural Entrainment (Headphones)
-              </span>
-              <span className="text-amber-400 font-bold">{beatHz.toFixed(1)} Hz</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="20"
-              step="0.5"
-              value={beatHz}
-              onChange={(e) => setBeatHz(Number(e.target.value))}
-              className="w-full accent-amber-500 cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] font-mono text-neutral-500 mt-1">
-              <button onClick={() => setBeatHz(3.0)} className="hover:text-neutral-300">3Hz Delta</button>
-              <button onClick={() => setBeatHz(6.0)} className="hover:text-amber-300 text-amber-400/90 font-bold">6Hz Theta</button>
-              <button onClick={() => setBeatHz(10.0)} className="hover:text-neutral-300">10Hz Alpha</button>
-            </div>
+            {(() => {
+              const currentBand = getBrainwaveBand(beatHz);
+              return (
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex justify-between items-center text-xs font-mono text-neutral-300">
+                    <span className="flex items-center gap-1">
+                      <Headphones className="w-3 h-3 text-amber-400" />
+                      Binaural Entrainment (Headphones)
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-amber-400 font-bold">{beatHz.toFixed(1)} Hz</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border ${currentBand.badgeClass}`}>
+                        {currentBand.label}
+                      </span>
+                    </div>
+                  </div>
+
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="100"
+                    step="0.5"
+                    value={beatHz}
+                    onChange={(e) => setBeatHz(Number(e.target.value))}
+                    className="w-full accent-amber-500 cursor-pointer"
+                  />
+
+                  {/* 6 Quick Presets covering Delta through 40Hz Gamma to 100Hz Lambda */}
+                  <div className="grid grid-cols-6 gap-1 text-[10px] font-mono mt-0.5">
+                    {QUICK_BRAINWAVE_PRESETS.map((p) => {
+                      const isSelected = Math.abs(beatHz - p.hz) < 0.2;
+                      return (
+                        <button
+                          key={p.hz}
+                          onClick={() => setBeatHz(p.hz)}
+                          className={`py-1 rounded text-center transition-all ${
+                            isSelected
+                              ? p.highlight
+                                ? 'bg-amber-900/90 border border-amber-400 text-amber-200 font-bold shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                                : 'bg-purple-900 border border-purple-400 text-purple-200 font-bold'
+                              : p.highlight
+                              ? 'bg-amber-950/40 border border-amber-800/60 text-amber-400/90 hover:bg-amber-900/50'
+                              : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
+                          }`}
+                        >
+                          {p.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Realtime Band Insight Card */}
+                  <div className={`mt-1 p-2 rounded-lg border text-[11px] font-mono leading-tight ${currentBand.badgeClass}`}>
+                    <div className="font-bold flex items-center justify-between">
+                      <span>{currentBand.subtitle}</span>
+                      <span className="text-[10px] opacity-80">{currentBand.minHz}–{currentBand.maxHz} Hz</span>
+                    </div>
+                    <p className="text-[10px] opacity-90 font-sans mt-0.5 leading-normal">
+                      {currentBand.occultSignificance}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Sacred Carrier Override */}

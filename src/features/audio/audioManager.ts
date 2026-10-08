@@ -253,3 +253,101 @@ export function playEnnChantTone(
     }
   };
 }
+
+/**
+ * Sustained Spheric Harmonic Resonator with Binaural Entrainment
+ * Creates a continuous, warm harmonic carrier drone tuned to the node's musical key
+ * with discrete stereo binaural oscillators for deep neural entrainment.
+ * Returns a stop function.
+ */
+export function startSphericResonator(
+  noteKey: string = 'D',
+  beatHz: number = 40.0,
+  volume: number = 0.28
+): () => void {
+  const AudioCtx =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtx) return () => {};
+
+  const ctx = new AudioCtx();
+  const unregister = registerAudioContext(ctx);
+  const now = ctx.currentTime;
+
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0.0001, now);
+  master.gain.linearRampToValueAtTime(volume, now + 1.2);
+  master.connect(ctx.destination);
+
+  // Pitch calculation
+  const noteFreqs: Record<string, number> = {
+    'C': 130.81, 'C#': 138.59, 'D': 146.83, 'D#': 155.56,
+    'E': 164.81, 'F': 174.61, 'F#': 185.00, 'G': 196.00,
+    'G#': 207.65, 'A': 220.00, 'A#': 233.08, 'B': 246.94, 'B#': 261.63
+  };
+  const baseFreq = noteFreqs[noteKey.toUpperCase()] || 146.83;
+
+  // Binaural hard-panned stereo pair
+  const merger = ctx.createChannelMerger(2);
+  merger.connect(master);
+
+  const leftHz = Math.max(20, baseFreq - beatHz / 2);
+  const rightHz = Math.max(20, baseFreq + beatHz / 2);
+
+  const leftOsc = ctx.createOscillator();
+  leftOsc.type = 'sine';
+  leftOsc.frequency.setValueAtTime(leftHz, now);
+
+  const rightOsc = ctx.createOscillator();
+  rightOsc.type = 'sine';
+  rightOsc.frequency.setValueAtTime(rightHz, now);
+
+  const lg = ctx.createGain();
+  const rg = ctx.createGain();
+  lg.gain.setValueAtTime(0.45, now);
+  rg.gain.setValueAtTime(0.45, now);
+
+  leftOsc.connect(lg).connect(merger, 0, 0);
+  rightOsc.connect(rg).connect(merger, 0, 1);
+
+  // Sub-harmonic body + Fifth overtone
+  const subOsc = ctx.createOscillator();
+  subOsc.type = 'triangle';
+  subOsc.frequency.setValueAtTime(baseFreq * 0.5, now);
+  const subG = ctx.createGain();
+  subG.gain.setValueAtTime(0.2, now);
+  subOsc.connect(subG).connect(master);
+
+  const fifthOsc = ctx.createOscillator();
+  fifthOsc.type = 'sine';
+  fifthOsc.frequency.setValueAtTime(baseFreq * 1.5, now);
+  const fifthG = ctx.createGain();
+  fifthG.gain.setValueAtTime(0.08, now);
+  fifthOsc.connect(fifthG).connect(master);
+
+  // Warm acoustic low-pass filter
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(650, now);
+  filter.Q.setValueAtTime(2.0, now);
+
+  const sources = [leftOsc, rightOsc, subOsc, fifthOsc];
+  sources.forEach((s) => s.start(now));
+
+  return () => {
+    try {
+      const stopTime = ctx.currentTime;
+      master.gain.setValueAtTime(master.gain.value, stopTime);
+      master.gain.linearRampToValueAtTime(0.0001, stopTime + 0.8);
+      setTimeout(() => {
+        sources.forEach((s) => {
+          try { s.stop(); } catch {}
+        });
+        unregister();
+        if (ctx.state !== 'closed') void ctx.close();
+      }, 900);
+    } catch {
+      unregister();
+    }
+  };
+}

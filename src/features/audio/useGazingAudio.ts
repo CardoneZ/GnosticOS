@@ -50,7 +50,8 @@ export interface GazingAudioOptions {
   octave?: number;
   /**
    * Binaural beat frequency (Hz) = |right − left|.
-   * Delta: 1–4 Hz | Theta: 4–7 Hz | Alpha: 8–12 Hz | Beta: 13–30 Hz.
+   * Delta: 0.5–4 Hz | Theta: 4–7.5 Hz | Alpha: 8–12 Hz | Beta: 13–29 Hz |
+   * Gamma: 30–50 Hz (40 Hz Luciferian Illumination) | Lambda: 60–120 Hz.
    * Stereo headphones required for neural entrainment.
    */
   beatHz?: number;
@@ -103,7 +104,7 @@ interface Graph {
   sources: AudioScheduledSourceNode[];
 }
 
-const MAX_BEAT_HZ = 40;
+const MAX_BEAT_HZ = 120;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** Creates high-quality continuous Brownian/Pinkish organic ambient noise. */
@@ -283,14 +284,16 @@ export function useGazingAudio({
       const t = g.ctx.currentTime;
       const tc = Math.max(glide / 4, 0.02);
 
-      // Frequencies for binaural entrainment
-      g.left.frequency.setTargetAtTime(carrier - beat / 2, t, tc);
-      g.right.frequency.setTargetAtTime(carrier + beat / 2, t, tc);
+      // Frequencies for binaural entrainment (guaranteed positive floor)
+      const leftHz = Math.max(20, carrier - beat / 2);
+      const rightHz = Math.max(20, carrier + beat / 2);
+      g.left.frequency.setTargetAtTime(leftHz, t, tc);
+      g.right.frequency.setTargetAtTime(rightHz, t, tc);
 
       // Unison detuned spread (active in 'astral_shimmer')
       const detuneAmt = timbre === 'astral_shimmer' ? 1.5 : 0;
-      g.leftDetune.frequency.setTargetAtTime(carrier - beat / 2 + detuneAmt, t, tc);
-      g.rightDetune.frequency.setTargetAtTime(carrier + beat / 2 - detuneAmt, t, tc);
+      g.leftDetune.frequency.setTargetAtTime(Math.max(20, leftHz + detuneAmt), t, tc);
+      g.rightDetune.frequency.setTargetAtTime(Math.max(20, rightHz - detuneAmt), t, tc);
       const detuneVol = timbre === 'astral_shimmer' ? 0.22 : 0;
       g.ldg.gain.setTargetAtTime(detuneVol, t, tc);
       g.rdg.gain.setTargetAtTime(detuneVol, t, tc);

@@ -130,13 +130,33 @@ export const SonicCodexModal: React.FC<SonicCodexModalProps> = ({ isOpen, onClos
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-lg bg-black/60 border border-amber-900/40">
+                <div className="p-3.5 rounded-lg bg-black/60 border border-sky-900/40">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-mono text-xs font-bold text-amber-400">GAMMA (30.0 – 50.0 Hz)</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950 text-amber-300">Illumination</span>
+                    <span className="font-mono text-xs font-bold text-sky-400">BETA (13.0 – 29.0 Hz)</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-950 text-sky-300">Active Intellect</span>
                   </div>
                   <p className="text-xs text-neutral-400">
-                    Hyper-awareness, peak mystical experience, Kundalini arousal, and sudden synthesis of complex esoteric knowledge.
+                    Crisp analytical alertness, logic, grimoire translation, and conscious banishing. Attributed to Hod / Mercurial discernment and severe focus.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-lg bg-black/60 border border-amber-600/60 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-mono text-xs font-bold text-amber-300">GAMMA (30.0 – 59.0 Hz) ★</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-700">40 Hz Illumination</span>
+                  </div>
+                  <p className="text-xs text-neutral-300">
+                    Peak hemispheric hyper-synchrony, Kundalini arousal, and sudden synthesis of vast esoteric wisdom. The signature <strong>40 Hz Morning Star</strong> frequency of Luciferian Apotheosis and Crown gnosis.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-lg bg-black/60 border border-fuchsia-900/40">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-mono text-xs font-bold text-fuchsia-400">LAMBDA (60.0 – 120.0 Hz)</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-950 text-fuchsia-300">Trans-Abyssal Ecstasy</span>
+                  </div>
+                  <p className="text-xs text-neutral-400">
+                    Hyper-frequency neural oscillations associated with out-of-body mystical transport, transcendence of ego boundaries, and crossing the Abyss of Daäth.
                   </p>
                 </div>
               </div>

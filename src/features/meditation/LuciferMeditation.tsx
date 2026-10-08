@@ -14,6 +14,7 @@ import {
 } from '../audio/audioManager';
 import { Play, Square, Volume2, Timer, Sparkles, AlertTriangle, Headphones } from 'lucide-react';
 import SanctumDropdown from '../ui/SanctumDropdown';
+import { getBrainwaveBand, QUICK_BRAINWAVE_PRESETS } from '../audio/brainwaveConstants';
 
 /**
  * GnosticOS — Lucifer Illumination Meditation
@@ -38,7 +39,6 @@ const BREATH = [
 ] as const;
 const BREATH_CYCLE = BREATH.reduce((a, b) => a + b.seconds, 0);
 const DRONE_HZ = 185; // F#3
-const BEAT_HZ = 6; // theta
 
 type Phase = 'settle' | 'gaze' | 'silence' | 'return';
 
@@ -85,7 +85,7 @@ interface Drone {
   sources: OscillatorNode[];
 }
 
-function startDrone(volume: number): Drone | null {
+function startDrone(volume: number, beatHz: number = 40): Drone | null {
   const Ctor =
     window.AudioContext ??
     (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -113,8 +113,10 @@ function startDrone(volume: number): Drone | null {
   // Binaural pair, hard-panned
   const merger = ctx.createChannelMerger(2);
   merger.connect(master);
-  const left = osc('sine', DRONE_HZ - BEAT_HZ / 2);
-  const right = osc('sine', DRONE_HZ + BEAT_HZ / 2);
+  const leftHz = Math.max(20, DRONE_HZ - beatHz / 2);
+  const rightHz = Math.max(20, DRONE_HZ + beatHz / 2);
+  const left = osc('sine', leftHz);
+  const right = osc('sine', rightHz);
   const lg = ctx.createGain();
   const rg = ctx.createGain();
   lg.gain.value = rg.gain.value = 0.5;
@@ -191,6 +193,7 @@ export const LuciferMeditation: React.FC = () => {
   const [ennInterval, setEnnInterval] = useState<number>(18);
   const [ennVolume, setEnnVolume] = useState<number>(0.5);
   const [droneVolume, setDroneVolume] = useState<number>(0.18);
+  const [binauralBeatHz, setBinauralBeatHz] = useState<number>(40.0); // 40 Hz Gamma Luciferian Illumination default
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [voiceURI, setVoiceURI] = useState<string>('');
   const [running, setRunning] = useState<boolean>(false);
@@ -272,7 +275,7 @@ export const LuciferMeditation: React.FC = () => {
     speechStepRef.current = 0;
     setCurrentSpokenText(enn);
     startRef.current = performance.now();
-    droneRef.current = startDrone(droneVolume);
+    droneRef.current = startDrone(droneVolume, binauralBeatHz);
     if (droneRef.current) playBell(droneRef.current.ctx);
     activeRef.current = true;
     setRunning(true);
@@ -415,6 +418,10 @@ export const LuciferMeditation: React.FC = () => {
         {/* Controls */}
         <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-4 text-xs font-mono text-neutral-500">
           <span>{formatTime(totalSeconds - elapsed)} remaining</span>
+          <span className="text-amber-400 font-bold flex items-center gap-1">
+            <Headphones className="w-3 h-3 text-amber-400" />
+            {binauralBeatHz.toFixed(1)} Hz ({getBrainwaveBand(binauralBeatHz).name})
+          </span>
           <button
             onClick={() => endSession(false)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900/80 border border-neutral-800 text-neutral-300 hover:text-white"
@@ -623,15 +630,84 @@ export const LuciferMeditation: React.FC = () => {
           )}
         </section>
 
-        {/* Drone */}
-        <section className="glass-panel p-4 rounded-xl flex flex-col gap-2 text-xs font-mono">
-          <label className="text-neutral-400 flex items-center gap-1.5">
-            <Volume2 className="w-3.5 h-3.5" /> Theta drone (F#, 6 Hz binaural) — {Math.round(droneVolume * 100)}%
-          </label>
-          <input type="range" min={0} max={0.4} step={0.01} value={droneVolume} onChange={(e) => setDroneVolume(+e.target.value)} className="accent-amber-500" />
-          <p className="text-neutral-500 flex items-center gap-1.5">
-            <Headphones className="w-3 h-3" /> Headphones needed for the binaural effect.
-          </p>
+        {/* Drone & Entrainment */}
+        <section className="glass-panel p-4 rounded-xl flex flex-col gap-3 text-xs font-mono">
+          {(() => {
+            const band = getBrainwaveBand(binauralBeatHz);
+            return (
+              <>
+                <div className="flex items-center justify-between">
+                  <label className="text-neutral-300 flex items-center gap-1.5 font-bold">
+                    <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                    Chokmah Drone (F#3, 185 Hz) & Binaural Beat
+                  </label>
+                  <span className={`text-[10px] px-2 py-0.5 rounded border font-mono ${band.badgeClass}`}>
+                    {band.name} {band.hz === 40 ? '★' : ''} ({binauralBeatHz.toFixed(1)} Hz)
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between text-neutral-400 text-[11px]">
+                    <span>Drone Volume</span>
+                    <span className="text-white font-bold">{Math.round(droneVolume * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={0.4}
+                    step={0.01}
+                    value={droneVolume}
+                    onChange={(e) => setDroneVolume(+e.target.value)}
+                    className="accent-amber-500 cursor-pointer"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-neutral-800">
+                  <div className="flex justify-between text-neutral-400 text-[11px]">
+                    <span className="flex items-center gap-1">
+                      <Headphones className="w-3 h-3 text-amber-400" />
+                      Entrainment Frequency (Headphones)
+                    </span>
+                    <span className="text-amber-400 font-bold">{binauralBeatHz.toFixed(1)} Hz ({band.label})</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={100}
+                    step={0.5}
+                    value={binauralBeatHz}
+                    onChange={(e) => setBinauralBeatHz(+e.target.value)}
+                    className="accent-amber-500 cursor-pointer"
+                  />
+                  <div className="grid grid-cols-6 gap-1 text-[10px] font-mono mt-1">
+                    {QUICK_BRAINWAVE_PRESETS.map((p) => {
+                      const isSelected = Math.abs(binauralBeatHz - p.hz) < 0.2;
+                      return (
+                        <button
+                          key={p.hz}
+                          onClick={() => setBinauralBeatHz(p.hz)}
+                          className={`py-1 rounded text-center transition-all ${
+                            isSelected
+                              ? p.highlight
+                                ? 'bg-amber-900 border border-amber-400 text-amber-200 font-bold shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                                : 'bg-purple-900 border border-purple-400 text-purple-200 font-bold'
+                              : p.highlight
+                              ? 'bg-amber-950/40 border border-amber-800/60 text-amber-400/90 hover:bg-amber-900/50'
+                              : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-neutral-200'
+                          }`}
+                        >
+                          {p.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-neutral-400 mt-1 font-sans leading-relaxed">
+                    <strong className="text-amber-300 font-mono">{band.label}:</strong> {band.occultSignificance}
+                  </p>
+                </div>
+              </>
+            );
+          })()}
         </section>
 
         <button
