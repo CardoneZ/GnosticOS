@@ -1,6 +1,12 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import GazingCircleCanvas, { BREATH_PRESETS, BreathPhase } from '../gazing/GazingCircleCanvas';
-import { useGazingAudio, parseNote, NoteName, SonicTexture } from '../audio/useGazingAudio';
+import {
+  useGazingAudio,
+  parseNote,
+  NoteName,
+  SonicTexture,
+  SoundscapeTimbre,
+} from '../audio/useGazingAudio';
 import { TunnelData } from '../../platform/vault';
 import {
   LuciferSigil,
@@ -13,6 +19,8 @@ import {
   SubliminalEngine,
   SUBLIMINAL_PRESETS,
 } from '../audio/subliminalAudio';
+import { AudioVisualizerCanvas } from '../audio/AudioVisualizerCanvas';
+import { SonicCodexModal } from '../audio/SonicCodexModal';
 import {
   Play,
   Square,
@@ -22,6 +30,10 @@ import {
   Zap,
   Sparkles,
   Headphones,
+  HelpCircle,
+  Activity,
+  Sliders,
+  Wind,
 } from 'lucide-react';
 
 interface SanctumPortalProps {
@@ -68,6 +80,11 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
   const [texture, setTexture] = useState<SonicTexture>(
     (activeTunnel.key_modifier as SonicTexture) || 'none',
   );
+  const [timbre, setTimbre] = useState<SoundscapeTimbre>('temple_drone');
+  const [atmosphereLevel, setAtmosphereLevel] = useState<number>(0.18);
+  const [harmonicsLevel, setHarmonicsLevel] = useState<number>(0.35);
+  const [visualizerMode, setVisualizerMode] = useState<'waveform' | 'spectrum'>('waveform');
+  const [isCodexOpen, setIsCodexOpen] = useState<boolean>(false);
 
   // Strobe state
   const [strobeEnabled, setStrobeEnabled] = useState<boolean>(false);
@@ -153,12 +170,16 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
     keyFrequency,
     beatHz: activeBeatHz,
     error: audioError,
+    getAnalyser,
   } = useGazingAudio({
     note: parsedKey,
     beatHz,
     carrierHz: carrierOverride,
     volume,
     texture,
+    timbre,
+    atmosphereLevel,
+    harmonicsLevel,
     rampSeconds: 1.5,
   });
 
@@ -517,57 +538,143 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
           </div>
         </div>
 
-        {/* Integrated Audio Console */}
-        <div className="p-4 rounded-lg bg-black/60 border border-neutral-800 flex flex-col gap-3">
+        {/* Integrated State-of-the-Art Sonic Console */}
+        <div className="p-4 rounded-xl bg-black/75 border border-purple-900/40 flex flex-col gap-3.5 shadow-xl">
+          {/* Header & Controls */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Music className="w-4 h-4 text-purple-400" />
-              <span className="font-serif text-xs font-bold uppercase tracking-wider text-neutral-200">
-                Grant Sonic Keys & Drones
-              </span>
+              <div>
+                <span className="font-serif text-xs font-bold uppercase tracking-wider text-neutral-200 block">
+                  Nightside Sonic Engine
+                </span>
+                <span className="text-[10px] font-mono text-purple-400">
+                  Typhonian Acoustic Synthesis
+                </span>
+              </div>
             </div>
-            <button
-              onClick={isAudioPlaying ? stopAudio : startAudio}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-mono font-medium transition-all ${
-                isAudioPlaying
-                  ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]'
-                  : 'bg-purple-900/60 hover:bg-purple-800/80 text-purple-200 border border-purple-700/60'
-              }`}
-            >
-              {isAudioPlaying ? (
-                <>
-                  <Square className="w-3.5 h-3.5 fill-current" /> SILENCE
-                </>
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5 fill-current" /> RESONATE
-                </>
-              )}
-            </button>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setIsCodexOpen(true)}
+                title="Open Sonic Sanctum Codex & Audio Guide"
+                className="p-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-purple-300 hover:text-white border border-neutral-700/80 transition-all flex items-center gap-1 text-[11px] font-mono"
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-purple-400" />
+                <span className="hidden sm:inline">Guide</span>
+              </button>
+
+              <button
+                onClick={isAudioPlaying ? stopAudio : startAudio}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all shadow-md ${
+                  isAudioPlaying
+                    ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.6)] animate-pulse'
+                    : 'bg-gradient-to-r from-purple-900 to-red-900 hover:from-purple-800 hover:to-red-800 text-white border border-purple-600/50'
+                }`}
+              >
+                {isAudioPlaying ? (
+                  <>
+                    <Square className="w-3 h-3 fill-current" /> SILENCE
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3 h-3 fill-current" /> RESONATE
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {audioError && (
-            <p className="text-red-400 text-xs font-mono">{audioError}</p>
+            <p className="text-red-400 text-xs font-mono bg-red-950/40 p-2 rounded border border-red-900/60">
+              {audioError}
+            </p>
           )}
 
-          {/* Sonic Key Details */}
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-neutral-950/70 p-2.5 rounded border border-neutral-800">
+          {/* Real-time Oscilloscope & Frequency Spectrum Visualizer */}
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between text-[10px] font-mono text-neutral-400">
+              <span className="flex items-center gap-1">
+                <Activity className="w-3 h-3 text-red-500" />
+                Acoustic Field
+              </span>
+              <button
+                onClick={() =>
+                  setVisualizerMode((prev) => (prev === 'waveform' ? 'spectrum' : 'waveform'))
+                }
+                className="text-purple-400 hover:text-purple-300 underline cursor-pointer"
+              >
+                Mode: {visualizerMode === 'waveform' ? 'Oscilloscope' : 'Spectrum'}
+              </button>
+            </div>
+            <AudioVisualizerCanvas
+              getAnalyser={getAnalyser}
+              isPlaying={isAudioPlaying}
+              mode={visualizerMode}
+              height={44}
+              color={timbre === 'abyssal_sub' ? '#38bdf8' : timbre === 'astral_shimmer' ? '#c084fc' : '#ef4444'}
+            />
+          </div>
+
+          {/* Sonic Key & Entrainment Readout */}
+          <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-neutral-950/90 p-2.5 rounded-lg border border-neutral-800">
             <div>
-              <span className="text-neutral-500 block text-[10px]">SONIC KEY</span>
+              <span className="text-neutral-500 block text-[10px]">PITCH / KEY</span>
               <span className="text-purple-300 font-bold">{parsedKey}</span> ({keyFrequency.toFixed(1)} Hz)
             </div>
             <div>
               <span className="text-neutral-500 block text-[10px]">BINAURAL BEAT</span>
               <span className="text-amber-400 font-bold">{activeBeatHz.toFixed(1)} Hz</span>{' '}
-              {activeBeatHz <= 7 ? '(Theta)' : activeBeatHz <= 12 ? '(Alpha)' : '(Beta)'}
+              <span className="text-[10px] text-amber-300">
+                {activeBeatHz <= 4
+                  ? '(Delta Void)'
+                  : activeBeatHz <= 7.5
+                  ? '(Theta Gnosis)'
+                  : activeBeatHz <= 12
+                  ? '(Alpha Focus)'
+                  : '(Beta)'}
+              </span>
             </div>
           </div>
 
-          {/* Binaural Beat Slider */}
+          {/* Soundscape Timbre Selector */}
           <div>
-            <div className="flex justify-between text-xs font-mono text-neutral-400 mb-1">
-              <span>Binaural Offset (Hz)</span>
-              <span>{beatHz.toFixed(1)} Hz</span>
+            <div className="flex items-center justify-between text-[11px] font-mono text-neutral-300 mb-1.5">
+              <span className="flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" /> Acoustic Timbre:
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
+              {[
+                { id: 'temple_drone', label: 'Temple Drone', sub: 'Singing Bowl Warmth' },
+                { id: 'abyssal_sub', label: 'Abyssal Sub', sub: 'Zero Highs Sub-bass' },
+                { id: 'astral_shimmer', label: 'Astral Shimmer', sub: 'Stereo Detuned Pad' },
+                { id: 'typhonian_void', label: 'Typhonian Void', sub: 'Subterranean Rumble' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setTimbre(item.id as SoundscapeTimbre)}
+                  className={`p-2 rounded text-left transition-all flex flex-col ${
+                    timbre === item.id
+                      ? 'bg-purple-950/80 border border-purple-500 text-white shadow-sm'
+                      : 'bg-neutral-900/80 border border-neutral-800 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/80'
+                  }`}
+                >
+                  <span className="font-bold text-[11px]">{item.label}</span>
+                  <span className="text-[9px] text-neutral-400">{item.sub}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Binaural Beat Offset Slider */}
+          <div>
+            <div className="flex justify-between text-xs font-mono text-neutral-300 mb-1">
+              <span className="flex items-center gap-1">
+                <Headphones className="w-3 h-3 text-amber-400" />
+                Binaural Entrainment (Headphones)
+              </span>
+              <span className="text-amber-400 font-bold">{beatHz.toFixed(1)} Hz</span>
             </div>
             <input
               type="range"
@@ -576,33 +683,33 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
               step="0.5"
               value={beatHz}
               onChange={(e) => setBeatHz(Number(e.target.value))}
-              className="w-full accent-purple-500 cursor-pointer"
+              className="w-full accent-amber-500 cursor-pointer"
             />
             <div className="flex justify-between text-[10px] font-mono text-neutral-500 mt-1">
-              <span>4Hz (Deep Theta)</span>
-              <span>7Hz (Theta/Alpha)</span>
-              <span>10Hz (Alpha)</span>
+              <button onClick={() => setBeatHz(3.0)} className="hover:text-neutral-300">3Hz Delta</button>
+              <button onClick={() => setBeatHz(6.0)} className="hover:text-amber-300 text-amber-400/90 font-bold">6Hz Theta</button>
+              <button onClick={() => setBeatHz(10.0)} className="hover:text-neutral-300">10Hz Alpha</button>
             </div>
           </div>
 
-          {/* Carrier Override */}
+          {/* Sacred Carrier Override */}
           <div>
             <label className="text-[11px] font-mono text-neutral-400 block mb-1">
-              Carrier Frequency:
+              Sacred Carrier Override:
             </label>
             <div className="grid grid-cols-4 gap-1 text-[11px] font-mono">
               {[
                 [undefined, 'Key'],
-                [108, '108Hz'],
-                [432, '432Hz'],
-                [528, '528Hz'],
+                [108, '108Hz Om'],
+                [432, '432Hz Verdi'],
+                [528, '528Hz Solf'],
               ].map(([val, label]) => (
                 <button
                   key={label}
                   onClick={() => setCarrierOverride(val as number | undefined)}
                   className={`py-1 rounded text-center transition-all ${
                     carrierOverride === val
-                      ? 'bg-purple-950 border border-purple-500 text-white'
+                      ? 'bg-purple-950 border border-purple-500 text-white font-bold'
                       : 'bg-neutral-900 text-neutral-400 hover:bg-neutral-800'
                   }`}
                 >
@@ -612,10 +719,10 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
             </div>
           </div>
 
-          {/* Texture selector (Grant Modifiers) */}
+          {/* Grant Texture selector */}
           <div>
             <label className="text-[11px] font-mono text-neutral-400 block mb-1">
-              Sonic Modifier Texture:
+              Grant Typhonian Texture:
             </label>
             <div className="grid grid-cols-3 gap-1 text-[11px] font-mono">
               {(['none', 'chatter', 'roar'] as SonicTexture[]).map((t) => (
@@ -624,33 +731,74 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
                   onClick={() => setTexture(t)}
                   className={`py-1 rounded text-center capitalize transition-all ${
                     texture === t
-                      ? 'bg-red-950 border border-red-500 text-white'
+                      ? 'bg-red-950 border border-red-500 text-white font-bold'
                       : 'bg-neutral-900 text-neutral-400 hover:bg-neutral-800'
                   }`}
                 >
-                  {t === 'none' ? 'Pure' : t === 'chatter' ? 'Chatter' : 'Roar'}
+                  {t === 'none' ? 'Pure' : t === 'chatter' ? 'Chatter (13Hz)' : 'Roar (Abyss)'}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Volume Slider */}
-          <div>
-            <div className="flex justify-between text-xs font-mono text-neutral-400 mb-1">
-              <span className="flex items-center gap-1">
-                <Volume2 className="w-3.5 h-3.5" /> Drone Volume
-              </span>
-              <span>{Math.round(volume * 100)}%</span>
+          {/* Mix Controls (Sliders Grid) */}
+          <div className="grid grid-cols-1 gap-2.5 pt-2 border-t border-neutral-800/80 text-xs font-mono">
+            {/* Master Drone Volume */}
+            <div>
+              <div className="flex justify-between text-neutral-300 mb-1">
+                <span className="flex items-center gap-1">
+                  <Volume2 className="w-3.5 h-3.5 text-red-400" /> Master Volume
+                </span>
+                <span>{Math.round(volume * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.02"
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="w-full accent-red-500 cursor-pointer"
+              />
             </div>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.02"
-              value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-full accent-red-500 cursor-pointer"
-            />
+
+            {/* Atmosphere Ambient Bed */}
+            <div>
+              <div className="flex justify-between text-neutral-300 mb-1">
+                <span className="flex items-center gap-1">
+                  <Wind className="w-3.5 h-3.5 text-cyan-400" /> Sanctum Atmosphere Bed
+                </span>
+                <span>{Math.round(atmosphereLevel * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="0.8"
+                step="0.02"
+                value={atmosphereLevel}
+                onChange={(e) => setAtmosphereLevel(Number(e.target.value))}
+                className="w-full accent-cyan-500 cursor-pointer"
+              />
+            </div>
+
+            {/* Warm Harmonic Overtones */}
+            <div>
+              <div className="flex justify-between text-neutral-300 mb-1">
+                <span className="flex items-center gap-1">
+                  <Sliders className="w-3.5 h-3.5 text-purple-400" /> Harmonic Overtones
+                </span>
+                <span>{Math.round(harmonicsLevel * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={harmonicsLevel}
+                onChange={(e) => setHarmonicsLevel(Number(e.target.value))}
+                className="w-full accent-purple-500 cursor-pointer"
+              />
+            </div>
           </div>
         </div>
 
@@ -765,6 +913,12 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Sonic Sanctum Codex & Audio Guide Modal */}
+      <SonicCodexModal
+        isOpen={isCodexOpen}
+        onClose={() => setIsCodexOpen(false)}
+      />
     </div>
   );
 };

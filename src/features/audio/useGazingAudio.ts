@@ -34,47 +34,71 @@ export function parseNote(raw: string): NoteName {
 }
 
 // -----------------------------------------------------------------------------
-// Hook
+// Sonic Soundscape Types
 // -----------------------------------------------------------------------------
 export type SonicTexture = 'none' | 'chatter' | 'roar';
 
+export type SoundscapeTimbre =
+  | 'temple_drone'    // Warm Tibetan singing bowl resonance with rich organic overtones
+  | 'abyssal_sub'     // Ultra-deep low-end void drone, devoid of piercing treble
+  | 'astral_shimmer'  // Ethereal unison detuned stereo pad with celestial harmonics
+  | 'typhonian_void'; // Subterranean brown noise rumble with slow atmospheric swell
+
 export interface GazingAudioOptions {
-  /** Sonic key of the active tunnel. */
+  /** Sonic key of the active tunnel or entity. */
   note: NoteName;
   octave?: number;
   /**
-   * Binaural beat (Hz) = |right − left|. Theta ≈ 4–7, Alpha ≈ 8–12.
-   * 0 disables the binaural split (pure mono drone). Headphones required.
+   * Binaural beat frequency (Hz) = |right − left|.
+   * Delta: 1–4 Hz | Theta: 4–7 Hz | Alpha: 8–12 Hz | Beta: 13–30 Hz.
+   * Stereo headphones required for neural entrainment.
    */
   beatHz?: number;
   /**
-   * Optional carrier override (e.g. 108 / 432 / 528 Hz). When omitted, the
-   * sonic key itself is the binaural carrier. When set, the key plays as a
-   * separate centred drone and the binaural pair rides on this carrier.
+   * Optional sacred carrier override (e.g. 108 / 432 / 528 / 639 Hz).
+   * When omitted, the sonic key itself serves as the carrier.
    */
   carrierHz?: number;
   a4?: number;
-  /** 0..1 master volume. Keep low — drones fatigue quickly. */
+  /** 0..1 master volume. */
   volume?: number;
   waveform?: Exclude<OscillatorType, 'custom'>;
   /** Grant's modifiers: Baratchial's "chattering undertone", Temphioth's "roar". */
   texture?: SonicTexture;
-  /** Fade-in/out seconds; also the glide time for retuning. */
+  /** Soundscape acoustic timbre profile. */
+  timbre?: SoundscapeTimbre;
+  /** 0..1 volume of the organic ambient background bed (sanctum atmosphere). */
+  atmosphereLevel?: number;
+  /** 0..1 volume of warm harmonic overtones (octave & 5th). */
+  harmonicsLevel?: number;
+  /** Fade-in/out seconds; also glide time for tuning transitions. */
   rampSeconds?: number;
 }
 
 interface Graph {
   ctx: AudioContext;
   master: GainNode;
+  warmFilter: BiquadFilterNode;
   left: OscillatorNode;
   right: OscillatorNode;
+  leftDetune: OscillatorNode;
+  rightDetune: OscillatorNode;
+  ldg: GainNode;
+  rdg: GainNode;
   key: OscillatorNode;
   keyGain: GainNode;
   sub: OscillatorNode;
+  subGain: GainNode;
+  harmOctave: OscillatorNode;
+  harmOctaveGain: GainNode;
+  harmFifth: OscillatorNode;
+  harmFifthGain: GainNode;
   chatterOsc: OscillatorNode;
   chatterGain: GainNode;
   roarFilter: BiquadFilterNode;
   roarGain: GainNode;
+  atmosphereGain: GainNode;
+  atmosphereFilter: BiquadFilterNode;
   analyser: AnalyserNode;
   sources: AudioScheduledSourceNode[];
 }
@@ -82,14 +106,14 @@ interface Graph {
 const MAX_BEAT_HZ = 40;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-function createNoiseBuffer(ctx: AudioContext, seconds = 2): AudioBuffer {
+/** Creates high-quality continuous Brownian/Pinkish organic ambient noise. */
+function createNoiseBuffer(ctx: AudioContext, seconds = 4): AudioBuffer {
   const buf = ctx.createBuffer(1, ctx.sampleRate * seconds, ctx.sampleRate);
   const d = buf.getChannelData(0);
   let last = 0;
   for (let i = 0; i < d.length; i++) {
-    // Brown-ish noise: integrated white noise, leaky to stay bounded.
-    last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
-    d[i] = last * 3.5;
+    last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.018;
+    d[i] = last * 3.8;
   }
   return buf;
 }
@@ -100,37 +124,76 @@ function buildGraph(ctx: AudioContext): Graph {
   master.gain.setValueAtTime(0, now);
 
   const comp = ctx.createDynamicsCompressor();
-  comp.threshold.value = -18;
+  comp.threshold.value = -16;
+  comp.knee.value = 12;
   comp.ratio.value = 4;
+  comp.attack.value = 0.02;
+  comp.release.value = 0.25;
+
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 2048;
-  master.connect(comp).connect(analyser).connect(ctx.destination);
+  analyser.smoothingTimeConstant = 0.85;
 
-  // Binaural pair: hard-panned through a ChannelMerger (no crosstalk, unlike StereoPanner).
+  // Master warm filter to eliminate harsh digital sterility
+  const warmFilter = ctx.createBiquadFilter();
+  warmFilter.type = 'lowpass';
+  warmFilter.frequency.setValueAtTime(950, now);
+  warmFilter.Q.setValueAtTime(2.2, now);
+
+  master.connect(warmFilter);
+  warmFilter.connect(comp);
+  comp.connect(analyser);
+  analyser.connect(ctx.destination);
+
+  // Binaural Channel Merger: hard-panned discrete stereo channels (no cross-bleed)
   const merger = ctx.createChannelMerger(2);
   merger.connect(master);
+
+  // Primary binaural oscillators
   const left = ctx.createOscillator();
   const right = ctx.createOscillator();
   const lg = ctx.createGain();
   const rg = ctx.createGain();
-  lg.gain.value = rg.gain.value = 0.5;
+  lg.gain.value = rg.gain.value = 0.45;
   left.connect(lg).connect(merger, 0, 0);
   right.connect(rg).connect(merger, 0, 1);
 
-  // Centred key drone (only audible when a carrier override is used).
+  // Unison stereo shimmer oscillators (for ethereal width)
+  const leftDetune = ctx.createOscillator();
+  const rightDetune = ctx.createOscillator();
+  const ldg = ctx.createGain();
+  const rdg = ctx.createGain();
+  ldg.gain.value = rdg.gain.value = 0; // modulated by timbre
+  leftDetune.connect(ldg).connect(merger, 0, 0);
+  rightDetune.connect(rdg).connect(merger, 0, 1);
+
+  // Centred key drone (plays when carrier override is active)
   const key = ctx.createOscillator();
   const keyGain = ctx.createGain();
   keyGain.gain.value = 0;
   key.connect(keyGain).connect(master);
 
-  // Sub-octave body.
+  // Sub-octave fundamental body
   const sub = ctx.createOscillator();
   sub.type = 'sine';
   const subGain = ctx.createGain();
-  subGain.gain.value = 0.22;
+  subGain.gain.value = 0.28;
   sub.connect(subGain).connect(master);
 
-  // "Chatter": 3rd partial, amplitude-gated by a ~13 Hz square LFO.
+  // Harmonic overtones (Octave + 5th) for singing bowl warmth
+  const harmOctave = ctx.createOscillator();
+  harmOctave.type = 'sine';
+  const harmOctaveGain = ctx.createGain();
+  harmOctaveGain.gain.value = 0.12;
+  harmOctave.connect(harmOctaveGain).connect(master);
+
+  const harmFifth = ctx.createOscillator();
+  harmFifth.type = 'triangle';
+  const harmFifthGain = ctx.createGain();
+  harmFifthGain.gain.value = 0.08;
+  harmFifth.connect(harmFifthGain).connect(master);
+
+  // "Chatter" (Baratchial's 13 Hz modulated undertone)
   const chatterOsc = ctx.createOscillator();
   chatterOsc.type = 'triangle';
   const chatterVca = ctx.createGain();
@@ -145,17 +208,18 @@ function buildGraph(ctx: AudioContext): Graph {
   chatterGain.gain.value = 0;
   chatterOsc.connect(chatterVca).connect(chatterGain).connect(master);
 
-  // "Roar": low-passed brown noise with slow swell.
+  // "Roar" (Temphioth's abyssal rumble)
+  const noiseBuf = createNoiseBuffer(ctx);
   const noise = ctx.createBufferSource();
-  noise.buffer = createNoiseBuffer(ctx);
+  noise.buffer = noiseBuf;
   noise.loop = true;
   const roarFilter = ctx.createBiquadFilter();
   roarFilter.type = 'lowpass';
-  roarFilter.Q.value = 2;
+  roarFilter.Q.value = 3;
   const roarVca = ctx.createGain();
   roarVca.gain.value = 0.6;
   const roarLfo = ctx.createOscillator();
-  roarLfo.frequency.value = 0.25;
+  roarLfo.frequency.value = 0.2;
   const roarDepth = ctx.createGain();
   roarDepth.gain.value = 0.4;
   roarLfo.connect(roarDepth).connect(roarVca.gain);
@@ -163,10 +227,31 @@ function buildGraph(ctx: AudioContext): Graph {
   roarGain.gain.value = 0;
   noise.connect(roarFilter).connect(roarVca).connect(roarGain).connect(master);
 
-  const sources: AudioScheduledSourceNode[] = [left, right, key, sub, chatterOsc, chatterLfo, noise, roarLfo];
+  // Organic Ambient Atmosphere Bed (Sanctum Wind / Temple Air)
+  const atmoSource = ctx.createBufferSource();
+  atmoSource.buffer = noiseBuf;
+  atmoSource.loop = true;
+  const atmosphereFilter = ctx.createBiquadFilter();
+  atmosphereFilter.type = 'bandpass';
+  atmosphereFilter.frequency.setValueAtTime(320, now);
+  atmosphereFilter.Q.setValueAtTime(1.2, now);
+  const atmosphereGain = ctx.createGain();
+  atmosphereGain.gain.value = 0.15;
+  atmoSource.connect(atmosphereFilter).connect(atmosphereGain).connect(master);
+
+  const sources: AudioScheduledSourceNode[] = [
+    left, right, leftDetune, rightDetune, key, sub,
+    harmOctave, harmFifth, chatterOsc, chatterLfo,
+    noise, roarLfo, atmoSource
+  ];
   sources.forEach((s) => s.start(now));
 
-  return { ctx, master, left, right, key, keyGain, sub, chatterOsc, chatterGain, roarFilter, roarGain, analyser, sources };
+  return {
+    ctx, master, warmFilter, left, right, leftDetune, rightDetune, ldg, rdg,
+    key, keyGain, sub, subGain, harmOctave, harmOctaveGain, harmFifth, harmFifthGain,
+    chatterOsc, chatterGain, roarFilter, roarGain,
+    atmosphereGain, atmosphereFilter, analyser, sources,
+  };
 }
 
 export function useGazingAudio({
@@ -175,10 +260,13 @@ export function useGazingAudio({
   beatHz = 6,
   carrierHz,
   a4 = 440,
-  volume = 0.25,
+  volume = 0.28,
   waveform = 'sine',
   texture = 'none',
-  rampSeconds = 2.5,
+  timbre = 'temple_drone',
+  atmosphereLevel = 0.18,
+  harmonicsLevel = 0.35,
+  rampSeconds = 2.0,
 }: GazingAudioOptions) {
   const keyHz = useMemo(() => noteToFrequency(note, octave, a4), [note, octave, a4]);
   const beat = clamp(beatHz, 0, MAX_BEAT_HZ);
@@ -189,37 +277,87 @@ export function useGazingAudio({
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  /** Push current parameters into the live graph with a smooth glide. */
+  /** Push current parameters into the live graph with smooth glide. */
   const apply = useCallback(
     (g: Graph, glide: number) => {
       const t = g.ctx.currentTime;
-      const tc = Math.max(glide / 4, 0.01); // setTargetAtTime reaches ~98% in 4τ
+      const tc = Math.max(glide / 4, 0.02);
+
+      // Frequencies for binaural entrainment
       g.left.frequency.setTargetAtTime(carrier - beat / 2, t, tc);
       g.right.frequency.setTargetAtTime(carrier + beat / 2, t, tc);
+
+      // Unison detuned spread (active in 'astral_shimmer')
+      const detuneAmt = timbre === 'astral_shimmer' ? 1.5 : 0;
+      g.leftDetune.frequency.setTargetAtTime(carrier - beat / 2 + detuneAmt, t, tc);
+      g.rightDetune.frequency.setTargetAtTime(carrier + beat / 2 - detuneAmt, t, tc);
+      const detuneVol = timbre === 'astral_shimmer' ? 0.22 : 0;
+      g.ldg.gain.setTargetAtTime(detuneVol, t, tc);
+      g.rdg.gain.setTargetAtTime(detuneVol, t, tc);
+
+      // Centered key drone
       g.key.frequency.setTargetAtTime(keyHz, t, tc);
-      g.keyGain.gain.setTargetAtTime(carrierHz !== undefined ? 0.35 : 0, t, tc);
-      g.sub.frequency.setTargetAtTime(keyHz / 2, t, tc);
+      g.keyGain.gain.setTargetAtTime(carrierHz !== undefined ? 0.25 : 0, t, tc);
+
+      // Sub-bass body
+      g.sub.frequency.setTargetAtTime(keyHz * 0.5, t, tc);
+      const subVol = timbre === 'abyssal_sub' ? 0.45 : 0.25;
+      g.subGain.gain.setTargetAtTime(subVol, t, tc);
+
+      // Harmonics (octave & fifth)
+      g.harmOctave.frequency.setTargetAtTime(keyHz * 2, t, tc);
+      g.harmFifth.frequency.setTargetAtTime(keyHz * 1.5, t, tc);
+      const harmBase = clamp(harmonicsLevel, 0, 1);
+      const octGain = timbre === 'abyssal_sub' ? 0.02 : harmBase * 0.16;
+      const fifthGain = timbre === 'abyssal_sub' ? 0.01 : harmBase * 0.10;
+      g.harmOctaveGain.gain.setTargetAtTime(octGain, t, tc);
+      g.harmFifthGain.gain.setTargetAtTime(fifthGain, t, tc);
+
+      // Grant textures
       g.chatterOsc.frequency.setTargetAtTime(keyHz * 3, t, tc);
       g.chatterGain.gain.setTargetAtTime(texture === 'chatter' ? 0.08 : 0, t, tc);
       g.roarFilter.frequency.setTargetAtTime(keyHz * 0.75, t, tc);
       g.roarGain.gain.setTargetAtTime(texture === 'roar' ? 0.5 : 0, t, tc);
+
+      // Timbre filter shaping
+      let filterCutoff = 900;
+      let filterQ = 2.2;
+      if (timbre === 'abyssal_sub') {
+        filterCutoff = 480;
+        filterQ = 1.8;
+      } else if (timbre === 'astral_shimmer') {
+        filterCutoff = 2200;
+        filterQ = 2.8;
+      } else if (timbre === 'typhonian_void') {
+        filterCutoff = 620;
+        filterQ = 3.5;
+      }
+      g.warmFilter.frequency.setTargetAtTime(filterCutoff, t, tc);
+      g.warmFilter.Q.setTargetAtTime(filterQ, t, tc);
+
+      // Atmosphere Bed Level
+      const atmoVol = timbre === 'typhonian_void' ? Math.max(0.35, atmosphereLevel) : atmosphereLevel;
+      g.atmosphereGain.gain.setTargetAtTime(clamp(atmoVol, 0, 1), t, tc);
+
+      // Waveforms
       g.left.type = g.right.type = g.key.type = waveform;
+      g.leftDetune.type = g.rightDetune.type = 'triangle';
     },
-    [carrier, beat, keyHz, carrierHz, texture, waveform],
+    [carrier, beat, keyHz, carrierHz, texture, timbre, atmosphereLevel, harmonicsLevel, waveform],
   );
 
-  // Live retune when the active tunnel / beat / texture changes.
+  // Live retune when parameters change
   useEffect(() => {
     if (graphRef.current) apply(graphRef.current, rampSeconds);
   }, [apply, rampSeconds]);
 
-  // Live volume.
+  // Live master volume
   useEffect(() => {
     const g = graphRef.current;
     if (g) g.master.gain.setTargetAtTime(clamp(volume, 0, 1), g.ctx.currentTime, 0.1);
   }, [volume]);
 
-  /** Must be called from a user gesture (autoplay policy). */
+  /** Start drone audio (must be called from user gesture) */
   const start = useCallback(async () => {
     try {
       setError(null);
@@ -242,10 +380,11 @@ export function useGazingAudio({
     }
   }, [apply, volume, rampSeconds]);
 
+  /** Graceful fade out and stop */
   const stop = useCallback(() => {
     const g = graphRef.current;
     if (!g) return;
-    graphRef.current = null; // a new start() during fade-out builds a fresh graph
+    graphRef.current = null;
     const t = g.ctx.currentTime;
     g.master.gain.cancelScheduledValues(t);
     g.master.gain.setValueAtTime(g.master.gain.value, t);
@@ -255,7 +394,7 @@ export function useGazingAudio({
     setIsPlaying(false);
   }, [rampSeconds]);
 
-  // Release the device on unmount.
+  // Release on unmount
   useEffect(
     () => () => {
       graphRef.current = null;
@@ -270,12 +409,12 @@ export function useGazingAudio({
     stop,
     isPlaying,
     error,
-    /** Exact pitch of the sonic key in Hz. */
     keyFrequency: keyHz,
     leftHz: carrier - beat / 2,
     rightHz: carrier + beat / 2,
     beatHz: beat,
-    /** For oscilloscope / visual sync with the gazing shader. */
+    carrierHz: carrier,
+    timbre,
     getAnalyser: () => graphRef.current?.analyser ?? null,
   };
 }
