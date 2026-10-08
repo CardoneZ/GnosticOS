@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { JournalEntryData, EntityData, TunnelData } from '../../platform/vault';
 import { WORKING_TYPE_LABELS, WorkingType } from './types';
+import SanctumDropdown from '../ui/SanctumDropdown';
 import {
   Search,
   Plus,
@@ -104,31 +105,34 @@ export const JournalList: React.FC<JournalListProps> = ({
         </div>
 
         <div className="sm:col-span-3">
-          <select
+          <SanctumDropdown
+            options={[
+              { value: 'all', label: 'All Working Types' },
+              ...Object.keys(WORKING_TYPE_LABELS).map((wt) => ({
+                value: wt,
+                label: WORKING_TYPE_LABELS[wt as WorkingType].label,
+              })),
+            ]}
             value={filterWorkingType}
-            onChange={(e) => setFilterWorkingType(e.target.value)}
-            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-xs font-mono text-neutral-200 focus:border-purple-500 focus:outline-none"
-          >
-            <option value="all">All Working Types</option>
-            {Object.keys(WORKING_TYPE_LABELS).map((wt) => (
-              <option key={wt} value={wt}>
-                {WORKING_TYPE_LABELS[wt as WorkingType].label}
-              </option>
-            ))}
-          </select>
+            onChange={setFilterWorkingType}
+            width="w-full"
+            placeholder="Working Type..."
+          />
         </div>
 
         <div className="sm:col-span-3">
-          <select
-            value={minResonance}
-            onChange={(e) => setMinResonance(Number(e.target.value))}
-            className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-xs font-mono text-neutral-200 focus:border-red-500 focus:outline-none"
-          >
-            <option value={1}>Resonance: Any (1+)</option>
-            <option value={5}>Resonance: Balanced (5+)</option>
-            <option value={7}>Resonance: High (7+)</option>
-            <option value={9}>Resonance: Apex (9+)</option>
-          </select>
+          <SanctumDropdown
+            options={[
+              { value: '1', label: 'Resonance: Any (1+)' },
+              { value: '5', label: 'Resonance: Balanced (5+)' },
+              { value: '7', label: 'Resonance: High (7+)' },
+              { value: '9', label: 'Resonance: Apex (9+)' },
+            ]}
+            value={String(minResonance)}
+            onChange={(val) => setMinResonance(Number(val))}
+            width="w-full"
+            placeholder="Min Resonance..."
+          />
         </div>
       </div>
 

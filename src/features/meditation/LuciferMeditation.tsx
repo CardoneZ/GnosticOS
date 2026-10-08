@@ -13,6 +13,7 @@ import {
   pickBestNaturalVoice,
 } from '../audio/audioManager';
 import { Play, Square, Volume2, Timer, Sparkles, AlertTriangle, Headphones } from 'lucide-react';
+import SanctumDropdown from '../ui/SanctumDropdown';
 
 /**
  * GnosticOS — Lucifer Illumination Meditation
@@ -579,18 +580,18 @@ export const LuciferMeditation: React.FC = () => {
                       {voices.find((v) => v.voiceURI === voiceURI)?.name.includes('Natural') ? '✦ Natural Neural' : 'Active'}
                     </span>
                   </span>
-                  <select
+                  <SanctumDropdown
+                    options={voices.map((v) => ({
+                      value: v.voiceURI,
+                      label: v.name.replace('Microsoft ', 'MS ').replace('Online (Natural)', '✦ Natural'),
+                      sublabel: v.lang,
+                      badge: v.name.includes('Natural') ? 'Neural' : undefined,
+                    }))}
                     value={voiceURI}
-                    onChange={(e) => setVoiceURI(e.target.value)}
-                    className="bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1.5 text-neutral-200"
-                  >
-                    {voices.length === 0 && <option value="">No English voices detected</option>}
-                    {voices.map((v) => (
-                      <option key={v.voiceURI} value={v.voiceURI}>
-                        {v.name.replace('Microsoft ', 'MS ').replace('Online (Natural)', '✦ Natural')} ({v.lang})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setVoiceURI}
+                    width="w-full"
+                    placeholder="Select English Voice..."
+                  />
                 </label>
                 <label className="flex flex-col gap-1 text-neutral-400">
                   Repeat every {ennInterval}s

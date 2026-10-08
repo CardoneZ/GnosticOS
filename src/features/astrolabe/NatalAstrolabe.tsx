@@ -2,11 +2,13 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   calculateNatalEsotericBlueprint,
   NatalCalculationResult,
+  ESOTERIC_CITIES,
 } from './natalEngine';
 import { ALL_GRIMOIRE_ENTITIES, GrimoireEntity } from '../../db/grimoireSeeds';
 import { DAY_RULERS, PLANETARY_CORRESPONDENCES, Planet } from '../ephemeris/planetaryHours';
 import SacredSigil from '../sigils/SacredSigil';
 import { playEnnChantTone, emergencyGroundAudio } from '../audio/audioManager';
+import SanctumDropdown, { DropdownOption } from '../ui/SanctumDropdown';
 import {
   Orbit,
   Calendar,
@@ -30,6 +32,7 @@ import {
   Compass,
   FileText,
   Info,
+  MapPin,
 } from 'lucide-react';
 
 interface NatalAstrolabeProps {
@@ -104,6 +107,21 @@ export const NatalAstrolabe: React.FC<NatalAstrolabeProps> = ({
   const [magicalName, setMagicalName] = useState<string>(() => {
     return localStorage.getItem('gnosticos_natal_name') || 'Perdurabo';
   });
+  const [selectedCityId, setSelectedCityId] = useState<string>(() => {
+    return localStorage.getItem('gnosticos_natal_city') || 'tuxpan';
+  });
+  const [customLat, setCustomLat] = useState<number>(() => {
+    const saved = localStorage.getItem('gnosticos_natal_custom_lat');
+    return saved ? parseFloat(saved) : 20.9573;
+  });
+  const [customLng, setCustomLng] = useState<number>(() => {
+    const saved = localStorage.getItem('gnosticos_natal_custom_lng');
+    return saved ? parseFloat(saved) : -97.4081;
+  });
+  const [customTz, setCustomTz] = useState<number>(() => {
+    const saved = localStorage.getItem('gnosticos_natal_custom_tz');
+    return saved ? parseFloat(saved) : -6;
+  });
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [copiedText, setCopiedText] = useState<string | null>(null);
@@ -126,12 +144,34 @@ export const NatalAstrolabe: React.FC<NatalAstrolabeProps> = ({
     localStorage.setItem('gnosticos_natal_date', birthDate);
     localStorage.setItem('gnosticos_natal_time', birthTime);
     localStorage.setItem('gnosticos_natal_name', magicalName);
-  }, [birthDate, birthTime, magicalName]);
+    localStorage.setItem('gnosticos_natal_city', selectedCityId);
+    localStorage.setItem('gnosticos_natal_custom_lat', String(customLat));
+    localStorage.setItem('gnosticos_natal_custom_lng', String(customLng));
+    localStorage.setItem('gnosticos_natal_custom_tz', String(customTz));
+  }, [birthDate, birthTime, magicalName, selectedCityId, customLat, customLng, customTz]);
 
   // Compute Blueprint
   const blueprint: NatalCalculationResult | null = useMemo(() => {
-    return calculateNatalEsotericBlueprint(birthDate, magicalName.trim() || undefined);
-  }, [birthDate, magicalName]);
+    const cityParam =
+      selectedCityId === 'custom'
+        ? { latitude: customLat, longitude: customLng, timezoneOffset: customTz, name: 'Custom Sanctuary' }
+        : selectedCityId;
+    return calculateNatalEsotericBlueprint(
+      birthDate,
+      magicalName.trim() || undefined,
+      birthTime,
+      cityParam
+    );
+  }, [birthDate, magicalName, birthTime, selectedCityId, customLat, customLng, customTz]);
+
+  const cityOptions: DropdownOption[] = useMemo(() => {
+    return ESOTERIC_CITIES.map((c) => ({
+      value: c.id,
+      label: c.name,
+      sublabel: `${c.stateOrRegion ? `${c.stateOrRegion}, ` : ''}${c.country}`,
+      badge: c.id === 'tuxpan' ? 'Veracruz' : `${c.latitude > 0 ? '+' : ''}${c.latitude.toFixed(1)}°, ${c.longitude > 0 ? '+' : ''}${c.longitude.toFixed(1)}°`,
+    }));
+  }, []);
 
   // Planetary Day Ruler from Birth Date
   const natalDayRuler = useMemo(() => {
@@ -291,7 +331,9 @@ export const NatalAstrolabe: React.FC<NatalAstrolabeProps> = ({
 
 **Subject / Magickal Motto:** ${blueprint.name || 'Anonymous Magus'}  
 **Date of Physical Manifestation:** ${blueprint.birthDate.raw} (${birthTime || '12:00'})  
+**Sanctuary City / Geodesic:** ${blueprint.geographicOrigins?.city.name || 'Tuxpan, Veracruz'} (${blueprint.geographicOrigins?.latitude.toFixed(4)}°, ${blueprint.geographicOrigins?.longitude.toFixed(4)}°)  
 **Planetary Day Ruler:** ${natalDayRuler?.title || 'Unknown'} (${natalDayRuler?.symbol || '☉'})  
+**Planetary Hour Ruler of Birth:** ${blueprint.geographicOrigins?.planetaryHourOfBirth.rulingPlanet || 'Sun'} ${blueprint.geographicOrigins?.planetaryHourOfBirth.symbol || '☉'} (${blueprint.geographicOrigins?.planetaryHourOfBirth.isDiurnal ? 'Diurnal' : 'Nocturnal'} Hour ${blueprint.geographicOrigins?.planetaryHourOfBirth.hourIndex || 1})  
 
 ---
 
@@ -331,7 +373,24 @@ ${blueprint.soulUrgeNumber ? `- **Soul Urge (Vocal Heart):** ${blueprint.soulUrg
 
 ---
 
-## 4. Dukanté Demonic Family Alignment (S. Connolly)
+## 4. Geographical Origins, Geodesic Sanctuary & Ascendant Daimon
+- **Birth Sanctuary:** ${blueprint.geographicOrigins?.city.name} (${blueprint.geographicOrigins?.city.country}) — ${blueprint.geographicOrigins?.city.description}
+- **Geodesic Coordinates:** ${blueprint.geographicOrigins?.latitude.toFixed(4)}° N, ${blueprint.geographicOrigins?.longitude.toFixed(4)}° W (Timezone: UTC ${blueprint.geographicOrigins && blueprint.geographicOrigins.timezoneOffset >= 0 ? `+${blueprint.geographicOrigins.timezoneOffset}` : blueprint.geographicOrigins?.timezoneOffset})
+- **Local Sidereal Time:** ${blueprint.geographicOrigins?.localSiderealTimeString} LST
+- **Solar Horizon:** Sunrise: ${blueprint.geographicOrigins?.solarTiming.sunrise} | Sunset: ${blueprint.geographicOrigins?.solarTiming.sunset} (${blueprint.geographicOrigins?.solarTiming.isDiurnal ? 'Diurnal' : 'Nocturnal'})
+- **Planetary Hour of Birth:** ${blueprint.geographicOrigins?.planetaryHourOfBirth.rulingPlanet} ${blueprint.geographicOrigins?.planetaryHourOfBirth.symbol} (Hour ${blueprint.geographicOrigins?.planetaryHourOfBirth.hourIndex})
+  - Archangel: ${blueprint.geographicOrigins?.planetaryHourOfBirth.archangel}
+  - Olympic Spirit: ${blueprint.geographicOrigins?.planetaryHourOfBirth.olympicSpirit}
+  - Demonic Reflex: ${blueprint.geographicOrigins?.planetaryHourOfBirth.demonicReflex}
+  - Magical Work: ${blueprint.geographicOrigins?.planetaryHourOfBirth.magicalFocus}
+- **Natal Ascendant (Rising Sign):** ${blueprint.geographicOrigins?.ascendant.signSymbol} **${blueprint.geographicOrigins?.ascendant.formattedDegree}** (Decan ${blueprint.geographicOrigins?.ascendant.decan}, Sub-Ruler: ${blueprint.geographicOrigins?.ascendant.subRuler})
+- **Natal Rising Goetic Patron (Threshold Daimon):** #${blueprint.geographicOrigins?.ascendant.risingGoetiaPatron.number} ${blueprint.geographicOrigins?.ascendant.risingGoetiaPatron.name} (${blueprint.geographicOrigins?.ascendant.risingGoetiaPatron.rank})
+  - Enn Chant: \`${blueprint.geographicOrigins?.ascendant.risingGoetiaPatron.enn}\`
+  - Office: ${blueprint.geographicOrigins?.ascendant.risingGoetiaPatron.office}
+
+---
+
+## 5. Dukanté Demonic Family Alignment (S. Connolly)
 - **Family:** ${blueprint.dukanteFamily.familyName}
 - **Demonic Patrons:** ${blueprint.dukanteFamily.demonicPatron}
 - **Direction / Element:** ${blueprint.dukanteFamily.direction} / ${blueprint.dukanteFamily.element}
@@ -339,13 +398,13 @@ ${blueprint.soulUrgeNumber ? `- **Soul Urge (Vocal Heart):** ${blueprint.soulUrg
 
 ---
 
-## 5. Nightside Qliphothic Tunnel of Set (Kenneth Grant / Liber 231)
+## 6. Nightside Qliphothic Tunnel of Set (Kenneth Grant / Liber 231)
 - **Tunnel:** ${blueprint.qliphothTunnel.tunnelNumber} (${blueprint.qliphothTunnel.guardian})
 - **Shadow Gnosis:** ${blueprint.qliphothTunnel.shadowGnosis}
 
 ---
 
-## 6. Alchemical Correspondences & Ritual Altar
+## 7. Alchemical Correspondences & Ritual Altar
 - **Carrier Musical Key & Resonance:** ${blueprint.alchemical.musicalKey} (${blueprint.alchemical.frequencyHz} Hz)
 - **Alchemical Metal:** ${blueprint.alchemical.metal}
 - **Ritual Incense:** ${blueprint.alchemical.incense}
@@ -356,11 +415,11 @@ ${blueprint.soulUrgeNumber ? `- **Soul Urge (Vocal Heart):** ${blueprint.soulUrg
     `.trim();
 
     onSendToJournal({
-      title: `Natal Blueprint: ${blueprint.name || 'Magus'} (${blueprint.birthDate.raw})`,
+      title: `Natal Blueprint: ${blueprint.name || 'Magus'} (${blueprint.birthDate.raw} — ${blueprint.geographicOrigins?.city.name || 'Tuxpan'})`,
       body_md: draftMd,
       working_type: 'initiation',
       pre_state_label: 'Seeking Natal Origins',
-      post_state_label: 'Attuned to Natal Decan',
+      post_state_label: 'Attuned to Natal Decan & Ascendant',
       resonance: blueprint.isMasterNumber ? 95 : 88,
     });
   };
@@ -420,8 +479,57 @@ ${blueprint.soulUrgeNumber ? `- **Soul Urge (Vocal Heart):** ${blueprint.soulUrg
             />
           </div>
 
+          {/* Geodetic Sanctuary / City Dropdown */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-900 border border-neutral-800 focus-within:border-red-600 transition-colors shadow-inner">
+            <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <SanctumDropdown
+              options={cityOptions}
+              value={selectedCityId}
+              onChange={(val) => setSelectedCityId(val)}
+              searchable={true}
+              width="w-48"
+              placeholder="Sanctuary City..."
+            />
+          </div>
+
+          {/* Custom Coordinates Inputs (Shown only if selectedCityId === 'custom') */}
+          {selectedCityId === 'custom' && (
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-neutral-900/90 border border-neutral-800 text-xs font-mono">
+              <div className="flex items-center gap-1">
+                <span className="text-neutral-500 text-[10px]">Lat:</span>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={customLat}
+                  onChange={(e) => setCustomLat(parseFloat(e.target.value) || 0)}
+                  className="w-16 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-white text-xs outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-neutral-500 text-[10px]">Lon:</span>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={customLng}
+                  onChange={(e) => setCustomLng(parseFloat(e.target.value) || 0)}
+                  className="w-16 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-white text-xs outline-none"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-neutral-500 text-[10px]">TZ:</span>
+                <input
+                  type="number"
+                  step="1"
+                  value={customTz}
+                  onChange={(e) => setCustomTz(parseFloat(e.target.value) || 0)}
+                  className="w-12 bg-neutral-950 border border-neutral-800 rounded px-1.5 py-0.5 text-white text-xs outline-none"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Magickal Name / Motto */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 focus-within:border-red-600 transition-colors shadow-inner min-w-[180px]">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 focus-within:border-red-600 transition-colors shadow-inner min-w-[160px]">
             <User className="w-3.5 h-3.5 text-amber-400" />
             <input
               type="text"
@@ -482,7 +590,7 @@ ${blueprint.soulUrgeNumber ? `- **Soul Urge (Vocal Heart):** ${blueprint.soulUrg
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Hero Archetype Ribbon */}
           <section className="px-6 py-4 bg-gradient-to-r from-neutral-950 via-neutral-900/60 to-neutral-950 border-b border-neutral-800/80 shrink-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
               {/* 1. Astrological Decan Card */}
               <div className="p-3.5 rounded-xl bg-neutral-900/70 border border-neutral-800 hover:border-red-900/50 transition-all shadow-sm flex flex-col justify-between">
                 <div className="flex items-start justify-between">
@@ -621,6 +729,49 @@ ${blueprint.soulUrgeNumber ? `- **Soul Urge (Vocal Heart):** ${blueprint.soulUrg
                   </div>
                 </div>
               </div>
+
+              {/* 5. Geographic Ascendant & Planetary Hour */}
+              {blueprint.geographicOrigins && (
+                <div className="p-3.5 rounded-xl bg-neutral-900/70 border border-neutral-800 hover:border-emerald-900/50 transition-all shadow-sm flex flex-col justify-between">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-[10px] font-mono text-emerald-400 tracking-wider uppercase flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-emerald-400" />
+                        <span>Ascendant & Geodesic</span>
+                      </span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xl text-emerald-300">
+                          {blueprint.geographicOrigins.ascendant.signSymbol}
+                        </span>
+                        <h2 className="text-sm font-bold text-white tracking-wide truncate">
+                          {blueprint.geographicOrigins.ascendant.signName} (Decan {blueprint.geographicOrigins.ascendant.decan})
+                        </h2>
+                      </div>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-[10px] font-mono text-emerald-300 border border-emerald-800/40 truncate max-w-[80px]">
+                      {blueprint.geographicOrigins.city.name}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-xs text-neutral-300 flex flex-col gap-0.5">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-neutral-400">Rising Degree:</span>
+                      <span className="font-mono text-emerald-200">{blueprint.geographicOrigins.ascendant.formattedDegree}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-neutral-400">Rising Patron:</span>
+                      <span className="text-white font-semibold truncate">
+                        #{blueprint.geographicOrigins.ascendant.risingGoetiaPatron.number} {blueprint.geographicOrigins.ascendant.risingGoetiaPatron.name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[11px] pt-1 border-t border-neutral-800/60 text-neutral-300">
+                      <span className="text-neutral-400">Hour Ruler:</span>
+                      <span className="font-mono text-amber-300">
+                        {blueprint.geographicOrigins.planetaryHourOfBirth.rulingPlanet} {blueprint.geographicOrigins.planetaryHourOfBirth.symbol} ({blueprint.geographicOrigins.planetaryHourOfBirth.isDiurnal ? 'Day' : 'Night'} Hr {blueprint.geographicOrigins.planetaryHourOfBirth.hourIndex})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -914,6 +1065,140 @@ ${blueprint.soulUrgeNumber ? `- **Soul Urge (Vocal Heart):** ${blueprint.soulUrg
                       </p>
                     </div>
                   </div>
+
+                  {/* Pillar 5: Geographical Origins, Geodesic Sanctuary & Ascendant Daimon */}
+                  {blueprint.geographicOrigins && (
+                    <div className="md:col-span-2 p-5 rounded-2xl bg-neutral-900/60 border border-neutral-800 flex flex-col gap-4">
+                      <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-emerald-400" />
+                          <h4 className="text-sm font-bold text-white">
+                            Geographical Sanctuary & Natal Ascendant Daimon
+                          </h4>
+                        </div>
+                        <span className="text-xs font-mono text-emerald-300">
+                          {blueprint.geographicOrigins.city.name} ({blueprint.geographicOrigins.city.country})
+                        </span>
+                      </div>
+
+                      {/* Top Info Bar */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="p-3 rounded-xl bg-neutral-950/70 border border-neutral-800/80">
+                          <span className="text-[10px] font-mono text-neutral-400 block uppercase">Geodesic Coordinates</span>
+                          <span className="text-xs font-bold text-white">
+                            {blueprint.geographicOrigins.latitude.toFixed(4)}° N, {blueprint.geographicOrigins.longitude.toFixed(4)}° W
+                          </span>
+                          <span className="text-[10px] text-neutral-500 block mt-0.5">
+                            {blueprint.geographicOrigins.city.description}
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-neutral-950/70 border border-neutral-800/80">
+                          <span className="text-[10px] font-mono text-neutral-400 block uppercase">Local Solar Horizon</span>
+                          <div className="flex items-center justify-between text-xs mt-0.5">
+                            <span className="text-amber-300">Sunrise: {blueprint.geographicOrigins.solarTiming.sunrise}</span>
+                            <span className="text-purple-300">Sunset: {blueprint.geographicOrigins.solarTiming.sunset}</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-neutral-400 block mt-0.5">
+                            LST: <strong className="text-white">{blueprint.geographicOrigins.localSiderealTimeString}</strong> · {blueprint.geographicOrigins.solarTiming.isDiurnal ? '☀️ Diurnal Birth' : '🌙 Nocturnal Birth'}
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-neutral-950/70 border border-neutral-800/80">
+                          <span className="text-[10px] font-mono text-neutral-400 block uppercase">Chaldean Hour Ruler</span>
+                          <div className="flex items-center gap-2 text-xs font-bold text-amber-300 mt-0.5">
+                            <span>{blueprint.geographicOrigins.planetaryHourOfBirth.rulingPlanet} {blueprint.geographicOrigins.planetaryHourOfBirth.symbol}</span>
+                            <span className="text-[10px] font-mono text-neutral-400 font-normal">
+                              ({blueprint.geographicOrigins.planetaryHourOfBirth.isDiurnal ? 'Day' : 'Night'} Hour {blueprint.geographicOrigins.planetaryHourOfBirth.hourIndex})
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-neutral-400 block mt-0.5 truncate">
+                            Archangel: {blueprint.geographicOrigins.planetaryHourOfBirth.archangel.split('(')[0].trim()} · Demon: {blueprint.geographicOrigins.planetaryHourOfBirth.demonicReflex.split('(')[0].trim()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Ascendant Rising Sign & Goetic Patron Daimon */}
+                      <div className="p-4 rounded-xl bg-black/70 border border-emerald-900/40 flex flex-col md:flex-row items-center justify-between gap-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-xl bg-emerald-950/60 border border-emerald-800/60 flex items-center justify-center text-2xl font-bold text-emerald-300 shrink-0">
+                            {blueprint.geographicOrigins.ascendant.signSymbol}
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-mono uppercase text-emerald-400 tracking-wider">
+                              Rising Ascendant (Eastern Horizon)
+                            </span>
+                            <h3 className="text-base font-bold text-white mt-0.5">
+                              {blueprint.geographicOrigins.ascendant.formattedDegree}
+                            </h3>
+                            <p className="text-xs text-neutral-400 mt-0.5">
+                              Decan {blueprint.geographicOrigins.ascendant.decan} (Sub-Ruler: {blueprint.geographicOrigins.ascendant.subRuler}) · Minor Arcana: <strong className="text-amber-300">{blueprint.geographicOrigins.ascendant.tarotMinorCard}</strong>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Rising Goetic Patron */}
+                        <div className="p-3.5 rounded-xl bg-neutral-900/90 border border-neutral-800 flex flex-col gap-2 max-w-md w-full">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono uppercase text-red-400 font-bold flex items-center gap-1.5">
+                              <Flame className="w-3.5 h-3.5 text-red-500" />
+                              <span>Rising Threshold Goetic Patron</span>
+                            </span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-800 text-neutral-300">
+                              #{blueprint.geographicOrigins.ascendant.risingGoetiaPatron.number} {blueprint.geographicOrigins.ascendant.risingGoetiaPatron.rank}
+                            </span>
+                          </div>
+
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-sm font-bold text-white">
+                              {blueprint.geographicOrigins.ascendant.risingGoetiaPatron.name}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-neutral-300 leading-snug">
+                            {blueprint.geographicOrigins.ascendant.risingGoetiaPatron.office}
+                          </p>
+
+                          <p className="font-serif italic text-xs text-red-300 select-all pt-1 border-t border-neutral-800/60">
+                            "{blueprint.geographicOrigins.ascendant.risingGoetiaPatron.enn}"
+                          </p>
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              onClick={() =>
+                                handlePlayEnn(
+                                  blueprint.alchemical.musicalKey,
+                                  blueprint.geographicOrigins?.ascendant.risingGoetiaPatron.enn
+                                )
+                              }
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
+                                activeAudioNote
+                                  ? 'bg-red-600 text-white animate-pulse'
+                                  : 'bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-800 text-emerald-200'
+                              }`}
+                            >
+                              <Volume2 className="w-3 h-3 text-emerald-300" />
+                              <span>Chant Rising Patron Enn</span>
+                            </button>
+
+                            {onNavigateToChaos && (
+                              <button
+                                onClick={() =>
+                                  onNavigateToChaos(
+                                    `COMMUNE WITH RISING PATRON ${blueprint.geographicOrigins?.ascendant.risingGoetiaPatron.name.toUpperCase()}`
+                                  )
+                                }
+                                className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-mono text-neutral-300 hover:text-white border border-neutral-700 transition-colors"
+                                title="Forge Sigil for Rising Patron"
+                              >
+                                <Sparkles className="w-3 h-3 text-amber-400" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

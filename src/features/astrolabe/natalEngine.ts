@@ -107,6 +107,61 @@ export interface NatalCalculationResult {
     musicalKey: string;
     frequencyHz: number;
   };
+
+  // 8. Geographic Origins & Classical Ascendant / Rising Decan
+  geographicOrigins?: {
+    city: EsotericCity;
+    latitude: number;
+    longitude: number;
+    timezoneOffset: number;
+    localSiderealTimeHours: number;
+    localSiderealTimeString: string;
+    solarTiming: {
+      sunrise: string;
+      sunset: string;
+      solarNoon: string;
+      isDiurnal: boolean;
+    };
+    planetaryHourOfBirth: {
+      hourIndex: number; // 1 to 12
+      isDiurnal: boolean;
+      rulingPlanet: string;
+      symbol: string;
+      archangel: string;
+      olympicSpirit: string;
+      demonicReflex: string;
+      magicalFocus: string;
+    };
+    ascendant: {
+      degree: number; // 0 to 360
+      degreeInSign: number; // 0 to 30
+      formattedDegree: string;
+      signName: string;
+      signSymbol: string;
+      element: 'fire' | 'water' | 'air' | 'earth';
+      decan: 1 | 2 | 3;
+      tarotMinorCard: string;
+      subRuler: string;
+      risingGoetiaPatron: {
+        number: number;
+        name: string;
+        rank: string;
+        enn: string;
+        office: string;
+      };
+    };
+  };
+}
+
+export interface EsotericCity {
+  id: string;
+  name: string;
+  stateOrRegion?: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+  timezoneOffset: number; // UTC offset in hours
+  description: string;
 }
 
 // =============================================================================
@@ -821,12 +876,474 @@ export const DUKANTE_FAMILIES = [
 ];
 
 // =============================================================================
+// ESOTERIC CITIES & GEODETIC SANCTUARIES (WITH TUXPAN, VERACRUZ)
+// =============================================================================
+
+export const ESOTERIC_CITIES: EsotericCity[] = [
+  {
+    id: 'tuxpan',
+    name: 'Tuxpan',
+    stateOrRegion: 'Veracruz',
+    country: 'Mexico',
+    latitude: 20.9573,
+    longitude: -97.4081,
+    timezoneOffset: -6,
+    description: 'Gulf Coast Port of Veracruz — Ancient Huasteca / Nahuatl Coastal Sanctuary of the Waters',
+  },
+  {
+    id: 'veracruz_port',
+    name: 'Veracruz (Heroica)',
+    stateOrRegion: 'Veracruz',
+    country: 'Mexico',
+    latitude: 19.1738,
+    longitude: -96.1342,
+    timezoneOffset: -6,
+    description: 'Historic Gateway Port to the Gulf of Mexico & Olmec Coastlands',
+  },
+  {
+    id: 'xalapa',
+    name: 'Xalapa-Enríquez',
+    stateOrRegion: 'Veracruz',
+    country: 'Mexico',
+    latitude: 19.5438,
+    longitude: -96.9102,
+    timezoneOffset: -6,
+    description: 'City of Flowers & Mist, foothills of Cofre de Perote volcano',
+  },
+  {
+    id: 'poza_rica',
+    name: 'Poza Rica',
+    stateOrRegion: 'Veracruz',
+    country: 'Mexico',
+    latitude: 20.5332,
+    longitude: -97.4595,
+    timezoneOffset: -6,
+    description: 'Northern Veracruz Oil & Lightning Hub near El Tajín Totonac Pyramids',
+  },
+  {
+    id: 'mexico_city',
+    name: 'Mexico City (Tenochtitlan)',
+    stateOrRegion: 'CDMX',
+    country: 'Mexico',
+    latitude: 19.4326,
+    longitude: -99.1332,
+    timezoneOffset: -6,
+    description: 'High Valley of Anahuac, Imperial Aztec Heart & Templo Mayor Nexus',
+  },
+  {
+    id: 'cairo',
+    name: 'Cairo / Giza',
+    country: 'Egypt',
+    latitude: 30.0444,
+    longitude: 31.2357,
+    timezoneOffset: 2,
+    description: 'Ancient Khem, Pyramids of Giza & Nile River Valley of the Godforms',
+  },
+  {
+    id: 'london',
+    name: 'London',
+    country: 'United Kingdom',
+    latitude: 51.5074,
+    longitude: -0.1278,
+    timezoneOffset: 0,
+    description: 'Hermetic Order of the Golden Dawn, Dee & Kelly Enochian Seat',
+  },
+  {
+    id: 'prague',
+    name: 'Prague',
+    country: 'Czech Republic',
+    latitude: 50.0755,
+    longitude: 14.4378,
+    timezoneOffset: 1,
+    description: 'Rudolfine Imperial Capital of Alchemy, Golem of Prague & Rosicrucians',
+  },
+  {
+    id: 'paris',
+    name: 'Paris',
+    country: 'France',
+    latitude: 48.8566,
+    longitude: 2.3522,
+    timezoneOffset: 1,
+    description: 'Eliphas Lévi, Nicolas Flamel, & Templar Gnostic Stronghold',
+  },
+  {
+    id: 'rome',
+    name: 'Rome',
+    country: 'Italy',
+    latitude: 41.9028,
+    longitude: 12.4964,
+    timezoneOffset: 1,
+    description: 'Caput Mundi, Mithraic Mysteries, & Catacomb Gnosis',
+  },
+  {
+    id: 'athens',
+    name: 'Athens',
+    country: 'Greece',
+    latitude: 37.9838,
+    longitude: 23.7275,
+    timezoneOffset: 2,
+    description: 'Eleusinian Mysteries, Dionysian Rites & Platonic Akademia',
+  },
+  {
+    id: 'jerusalem',
+    name: 'Jerusalem (Yerushalayim)',
+    country: 'Israel',
+    latitude: 31.7683,
+    longitude: 35.2137,
+    timezoneOffset: 2,
+    description: 'Axis Mundi, Temple of Solomon, & Kabbalistic Merkabah Throne',
+  },
+  {
+    id: 'new_york',
+    name: 'New York City',
+    stateOrRegion: 'NY',
+    country: 'United States',
+    latitude: 40.7128,
+    longitude: -74.0060,
+    timezoneOffset: -5,
+    description: 'Modern Astral Metropole, Boleskine / Crowley US Travels',
+  },
+  {
+    id: 'los_angeles',
+    name: 'Los Angeles (Babalon)',
+    stateOrRegion: 'CA',
+    country: 'United States',
+    latitude: 34.0522,
+    longitude: -118.2437,
+    timezoneOffset: -8,
+    description: 'Jack Parsons, Babalon Working 1946 & Agape Lodge Thelema',
+  },
+  {
+    id: 'tokyo',
+    name: 'Tokyo',
+    country: 'Japan',
+    latitude: 35.6762,
+    longitude: 139.6503,
+    timezoneOffset: 9,
+    description: 'Eastern Dragon Vein (Ryu-myaku) & Shinto-Buddhist Ley Nexus',
+  },
+  {
+    id: 'buenos_aires',
+    name: 'Buenos Aires',
+    country: 'Argentina',
+    latitude: -34.6037,
+    longitude: -58.3816,
+    timezoneOffset: -3,
+    description: 'Southern Cross Vortex & Latin American Esoteric Renaissance',
+  },
+  {
+    id: 'bogota',
+    name: 'Bogotá',
+    country: 'Colombia',
+    latitude: 4.7110,
+    longitude: -74.0721,
+    timezoneOffset: -5,
+    description: 'Andean High Plateau, Sacred Guatavita Lagoon of El Dorado',
+  },
+  {
+    id: 'custom',
+    name: 'Custom Lat / Long Coordinates',
+    country: 'User Specified',
+    latitude: 20.9573,
+    longitude: -97.4081,
+    timezoneOffset: -6,
+    description: 'Manual geodesic entry for exact coordinates',
+  },
+];
+
+const PLANETARY_HOUR_DETAILS: Record<
+  string,
+  {
+    symbol: string;
+    archangel: string;
+    olympicSpirit: string;
+    demonicReflex: string;
+    magicalFocus: string;
+  }
+> = {
+  Sun: {
+    symbol: '☉',
+    archangel: 'Raphael (Healer of God) & Michael',
+    olympicSpirit: 'Och (Solar Alchemist)',
+    demonicReflex: 'Sorath (Sun Demon 666) & Belphegor',
+    magicalFocus: 'Illumination, authority, vital health, wealth, and sovereign will.',
+  },
+  Moon: {
+    symbol: '☽',
+    archangel: 'Gabriel (Governor of Dreams)',
+    olympicSpirit: 'Phul (Silver Lunar Lord)',
+    demonicReflex: 'Lilith (Queen of the Night) & Naamah',
+    magicalFocus: 'Subconscious depth, astral navigation, dream lucidity, and primal tides.',
+  },
+  Mars: {
+    symbol: '♂',
+    archangel: 'Kamael (Wrath of God)',
+    olympicSpirit: 'Phaleg (Warlord of Iron)',
+    demonicReflex: 'Asmodeus (King of Wrath) & Barzabel',
+    magicalFocus: 'Severing energetic parasites, courage, combat mastery, and dynamic force.',
+  },
+  Mercury: {
+    symbol: '☿',
+    archangel: 'Michael & Raphael',
+    olympicSpirit: 'Ophiel (Messenger of Hermes)',
+    demonicReflex: 'Adrammelech (Chancellor of Hell) & Samael',
+    magicalFocus: 'Grimoire study, gematria, telepathy, quicksilver intellect, and commerce.',
+  },
+  Jupiter: {
+    symbol: '♃',
+    archangel: 'Tzadkiel (Righteousness of God)',
+    olympicSpirit: 'Bethor (Titan of Abundance)',
+    demonicReflex: 'Astaroth (Grand Duke) & Gha\'agsheblah',
+    magicalFocus: 'Expansion, imperial sovereignty, luck, high ceremonial magick, and honors.',
+  },
+  Venus: {
+    symbol: '♀',
+    archangel: 'Haniel (Grace of God) & Anael',
+    olympicSpirit: 'Hagith (Empress of Beauty)',
+    demonicReflex: 'Agrat bat Mahlat (Demoness of Whoredom) & Eisheth',
+    magicalFocus: 'Magnetic attraction, aesthetic perfection, love, alchemy of desire, and art.',
+  },
+  Saturn: {
+    symbol: '♄',
+    archangel: 'Tzaphkiel (Contemplation of God) & Cassiel',
+    olympicSpirit: 'Aratron (Architect of Time & Stones)',
+    demonicReflex: 'Lucifuge Rofocale (Pact Keeper) & Saturnus',
+    magicalFocus: 'Binding, ancestral necromancy, karma, boundaries, and lead-to-gold initiation.',
+  },
+};
+
+const DECAN_SAMPLE_DATES: Array<[number, number]> = [
+  // Aries (0° - 30°)
+  [3, 25], [4, 5], [4, 15],
+  // Taurus (30° - 60°)
+  [4, 25], [5, 5], [5, 15],
+  // Gemini (60° - 90°)
+  [5, 25], [6, 5], [6, 15],
+  // Cancer (90° - 120°)
+  [6, 25], [7, 5], [7, 15],
+  // Leo (120° - 150°)
+  [7, 28], [8, 5], [8, 15],
+  // Virgo (150° - 180°)
+  [8, 28], [9, 5], [9, 15],
+  // Libra (180° - 210°)
+  [9, 28], [10, 5], [10, 15],
+  // Scorpio (210° - 240°)
+  [10, 28], [11, 5], [11, 15],
+  // Sagittarius (240° - 270°)
+  [11, 28], [12, 5], [12, 15],
+  // Capricorn (270° - 300°)
+  [12, 28], [1, 5], [1, 15],
+  // Aquarius (300° - 330°)
+  [1, 25], [2, 5], [2, 15],
+  // Pisces (330° - 360°)
+  [2, 25], [3, 5], [3, 15],
+];
+
+export function getDecanFromEclipticDegree(degree: number): {
+  decanEntry: DecanEntry;
+  signName: string;
+  signSymbol: string;
+  degreeInSign: number;
+  formattedDegree: string;
+  risingGoetiaPatron: {
+    number: number;
+    name: string;
+    rank: string;
+    enn: string;
+    office: string;
+  };
+} {
+  const normDeg = ((degree % 360) + 360) % 360;
+  const signIdx = Math.floor(normDeg / 30);
+  const degInSign = normDeg - signIdx * 30;
+  const decanIdxInSign = Math.min(2, Math.floor(degInSign / 10));
+  const globalIdx = Math.min(35, Math.max(0, signIdx * 3 + decanIdxInSign));
+
+  const [m, d] = DECAN_SAMPLE_DATES[globalIdx];
+  const decanEntry = getDecanFromDate(m, d);
+
+  // 5° Quinance within decan
+  const degInsideDecan = degInSign - decanIdxInSign * 10;
+  const isNightQuinance = degInsideDecan >= 5;
+  const risingGoetiaPatron = isNightQuinance ? decanEntry.nightGoetia : decanEntry.dayGoetia;
+
+  const degInt = Math.floor(degInSign);
+  const minutes = Math.floor((degInSign - degInt) * 60);
+  const formattedDegree = `${degInt}° ${minutes.toString().padStart(2, '0')}' ${decanEntry.sign}`;
+
+  return {
+    decanEntry,
+    signName: decanEntry.sign,
+    signSymbol: decanEntry.symbol,
+    degreeInSign: degInSign,
+    formattedDegree,
+    risingGoetiaPatron,
+  };
+}
+
+export function calculateGeographicNatalCurrents(params: {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  city: EsotericCity;
+}) {
+  const { year, month, day, hour, minute, city } = params;
+  const lat = city.latitude;
+  const lng = city.longitude;
+  const tz = city.timezoneOffset;
+
+  // Day of year
+  const startOfYear = new Date(Date.UTC(year, 0, 1));
+  const currentDate = new Date(Date.UTC(year, month - 1, day));
+  const dayOfYear = Math.floor((currentDate.getTime() - startOfYear.getTime()) / 86400000) + 1;
+
+  // Solar Equation & Sunrise/Sunset
+  const rad = Math.PI / 180;
+  const B = ((360 / 365) * (dayOfYear - 81)) * rad;
+  const EoT = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B); // in minutes
+  const declination = 23.44 * Math.sin(B) * rad;
+
+  const latRad = lat * rad;
+  const solarNoonHour = 12.0 - (lng - tz * 15.0) / 15.0 - EoT / 60.0;
+
+  // Solar hour angle at sunrise/sunset
+  let cosH0 = (Math.sin(-0.833 * rad) - Math.sin(latRad) * Math.sin(declination)) /
+              (Math.cos(latRad) * Math.cos(declination));
+  cosH0 = Math.max(-1, Math.min(1, cosH0));
+  const H0 = Math.acos(cosH0) / rad / 15.0; // hours
+
+  const sunriseHour = solarNoonHour - H0;
+  const sunsetHour = solarNoonHour + H0;
+
+  const formatHoursToTime = (h: number): string => {
+    let norm = ((h % 24) + 24) % 24;
+    const hh = Math.floor(norm);
+    const mm = Math.floor((norm - hh) * 60);
+    return `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
+  };
+
+  const birthDecimalHours = hour + minute / 60.0;
+  const isDiurnal = birthDecimalHours >= sunriseHour && birthDecimalHours < sunsetHour;
+
+  // Planetary Hour (Chaldean Order: Saturn, Jupiter, Mars, Sun, Venus, Mercury, Moon)
+  const CHALDEAN_ORDER = ['Saturn', 'Jupiter', 'Mars', 'Sun', 'Venus', 'Mercury', 'Moon'];
+  const DAY_WEEK_RULERS = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+  const dayOfWeek = currentDate.getUTCDay(); // 0 = Sun
+  const dayRuler = DAY_WEEK_RULERS[dayOfWeek];
+  const dayRulerChaldeanIdx = CHALDEAN_ORDER.indexOf(dayRuler);
+
+  let hourIndex = 1;
+  let rulingPlanet = 'Sun';
+
+  if (isDiurnal) {
+    const dayLength = sunsetHour - sunriseHour;
+    const singleHour = dayLength / 12.0;
+    const elapsed = Math.max(0, birthDecimalHours - sunriseHour);
+    hourIndex = Math.min(12, Math.floor(elapsed / singleHour) + 1);
+    const chaldeanOffset = (dayRulerChaldeanIdx + (hourIndex - 1)) % 7;
+    rulingPlanet = CHALDEAN_ORDER[chaldeanOffset];
+  } else {
+    const nightLength = 24.0 - (sunsetHour - sunriseHour);
+    const singleHour = nightLength / 12.0;
+    let elapsed = 0;
+    if (birthDecimalHours >= sunsetHour) {
+      elapsed = birthDecimalHours - sunsetHour;
+    } else {
+      elapsed = (24.0 - sunsetHour) + birthDecimalHours;
+    }
+    hourIndex = Math.min(12, Math.floor(elapsed / singleHour) + 1);
+    const chaldeanOffset = (dayRulerChaldeanIdx + 12 + (hourIndex - 1)) % 7;
+    rulingPlanet = CHALDEAN_ORDER[chaldeanOffset];
+  }
+
+  const planetDetails = PLANETARY_HOUR_DETAILS[rulingPlanet] || PLANETARY_HOUR_DETAILS.Sun;
+
+  // Julian Date & Sidereal Time for Ascendant
+  let y = year;
+  let m = month;
+  if (m <= 2) {
+    y -= 1;
+    m += 12;
+  }
+  const utHours = birthDecimalHours - tz;
+  const A = Math.floor(y / 100);
+  const B_jd = 2 - A + Math.floor(A / 4);
+  const jd = Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + day + B_jd - 1524.5 + utHours / 24.0;
+  const dJ2000 = jd - 2451545.0;
+
+  // Greenwich Mean Sidereal Time in degrees
+  let gmst = (280.46061837 + 360.98564736629 * dJ2000) % 360;
+  if (gmst < 0) gmst += 360;
+
+  // Local Sidereal Time in degrees
+  let lstDeg = (gmst + lng) % 360;
+  if (lstDeg < 0) lstDeg += 360;
+  const lstHours = lstDeg / 15.0;
+
+  // Obliquity of Ecliptic
+  const tCenturies = dJ2000 / 36525.0;
+  const epsDeg = 23.4392911 - 0.0130042 * tCenturies;
+  const epsRad = epsDeg * rad;
+  const ramcRad = lstDeg * rad;
+
+  // Ascendant Calculation
+  const yAsc = Math.cos(ramcRad);
+  const xAsc = -Math.sin(ramcRad) * Math.cos(epsRad) - Math.tan(latRad) * Math.sin(epsRad);
+  let ascRad = Math.atan2(yAsc, xAsc);
+  let ascDeg = (ascRad / rad) % 360;
+  if (ascDeg < 0) ascDeg += 360;
+
+  const ascDecan = getDecanFromEclipticDegree(ascDeg);
+
+  return {
+    city,
+    latitude: lat,
+    longitude: lng,
+    timezoneOffset: tz,
+    localSiderealTimeHours: lstHours,
+    localSiderealTimeString: formatHoursToTime(lstHours),
+    solarTiming: {
+      sunrise: formatHoursToTime(sunriseHour),
+      sunset: formatHoursToTime(sunsetHour),
+      solarNoon: formatHoursToTime(solarNoonHour),
+      isDiurnal,
+    },
+    planetaryHourOfBirth: {
+      hourIndex,
+      isDiurnal,
+      rulingPlanet,
+      symbol: planetDetails.symbol,
+      archangel: planetDetails.archangel,
+      olympicSpirit: planetDetails.olympicSpirit,
+      demonicReflex: planetDetails.demonicReflex,
+      magicalFocus: planetDetails.magicalFocus,
+    },
+    ascendant: {
+      degree: ascDeg,
+      degreeInSign: ascDecan.degreeInSign,
+      formattedDegree: ascDecan.formattedDegree,
+      signName: ascDecan.signName,
+      signSymbol: ascDecan.signSymbol,
+      element: ascDecan.decanEntry.element,
+      decan: ascDecan.decanEntry.decan,
+      tarotMinorCard: ascDecan.decanEntry.tarotMinor,
+      subRuler: ascDecan.decanEntry.subRuler,
+      risingGoetiaPatron: ascDecan.risingGoetiaPatron,
+    },
+  };
+}
+
+// =============================================================================
 // MAIN ENTRY CALCULATOR
 // =============================================================================
 
 export function calculateNatalEsotericBlueprint(
   birthDateStr: string, // 'YYYY-MM-DD'
-  name?: string
+  name?: string,
+  birthTimeStr: string = '12:00',
+  cityIdOrCustom?: string | { latitude: number; longitude: number; timezoneOffset: number; name: string }
 ): NatalCalculationResult | null {
   const parts = birthDateStr.split('-').map((p) => parseInt(p, 10));
   if (parts.length !== 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
@@ -835,6 +1352,28 @@ export function calculateNatalEsotericBlueprint(
 
   const [year, month, day] = parts;
   if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+  // Resolve City
+  let city: EsotericCity = ESOTERIC_CITIES[0]; // Default to Tuxpan, Veracruz
+  if (typeof cityIdOrCustom === 'string') {
+    const found = ESOTERIC_CITIES.find((c) => c.id === cityIdOrCustom);
+    if (found) city = found;
+  } else if (cityIdOrCustom && typeof cityIdOrCustom === 'object') {
+    city = {
+      id: 'custom',
+      name: cityIdOrCustom.name || 'Custom Location',
+      country: 'User Coordinates',
+      latitude: cityIdOrCustom.latitude,
+      longitude: cityIdOrCustom.longitude,
+      timezoneOffset: cityIdOrCustom.timezoneOffset,
+      description: `User-defined coordinates: ${cityIdOrCustom.latitude.toFixed(4)}°, ${cityIdOrCustom.longitude.toFixed(4)}°`,
+    };
+  }
+
+  // Parse Birth Time
+  const timeParts = (birthTimeStr || '12:00').split(':').map((p) => parseInt(p, 10));
+  const birthHour = isNaN(timeParts[0]) ? 12 : timeParts[0];
+  const birthMinute = isNaN(timeParts[1]) ? 0 : timeParts[1];
 
   // 1. Numerology
   const { lifePath, isMaster, masterTitle } = calculateLifePath(year, month, day);
@@ -887,6 +1426,16 @@ export function calculateNatalEsotericBlueprint(
 
   const alch = elementToAlchemical[decanData.element] || elementToAlchemical.air;
 
+  // 6. Geographic Current & Ascendant Calculation
+  const geographicOrigins = calculateGeographicNatalCurrents({
+    year,
+    month,
+    day,
+    hour: birthHour,
+    minute: birthMinute,
+    city,
+  });
+
   return {
     birthDate: {
       year,
@@ -935,5 +1484,6 @@ export function calculateNatalEsotericBlueprint(
       musicalKey: sound.key,
       frequencyHz: sound.hz,
     },
+    geographicOrigins,
   };
 }

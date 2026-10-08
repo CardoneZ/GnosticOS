@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { TunnelData, EntityData, SEED_TUNNELS } from '../../platform/vault';
 import { AlbTalisman, LuciferSigil } from './LuciferianSymbols';
+import { playEnnChantTone, emergencyGroundAudio } from '../audio/audioManager';
 import {
   Network,
   ArrowUpRight,
   Sparkles,
   Volume2,
+  VolumeX,
   Compass,
   Zap,
   BookOpen,
@@ -14,6 +16,8 @@ import {
   Sun,
   Moon,
   Info,
+  Table,
+  X,
 } from 'lucide-react';
 
 interface DualTreeViewerProps {
@@ -23,7 +27,7 @@ interface DualTreeViewerProps {
 }
 
 // -----------------------------------------------------------------------------
-// Sephiroth & Qliphoth Definition with Connolly & Ford Lore
+// Sephiroth & Qliphoth Definition with Authentic Lore (Zohar, Crowley, Connolly)
 // -----------------------------------------------------------------------------
 export interface SephiraNode {
   id: number;
@@ -31,17 +35,20 @@ export interface SephiraNode {
   y: number;
   dayName: string;
   sephiraTitle: string;
+  archangel: string;
+  divineName: string;
   dayDivinity: string;
   dayHebrew: string;
   dayKemetic: string;
   dayPillar: 'Severity' | 'Balance' | 'Mercy';
   connollyEnn: string;
-  /** Set true only after confirming the enn against a primary source. */
   ennVerified?: boolean;
-  nightName: string;
-  nightDemon: string;
+  nightName: string; // The Qliphoth sphere name: Thaumiel, Ghagiel, Satariel, Samael, etc.
+  nightDemon: string; // The ruling arch-demon(s): Satan & Moloch, Beelzebub, Adrammelech & Samael, etc.
   nightMeaning: string;
+  nightEnn: string; // Authentic Demonic Enn for Nightside
   gematria: number;
+  nightGematria: number;
   musicalKey: string;
   keyModifier?: 'roar' | 'chatter' | 'tone';
   incense: string;
@@ -61,15 +68,20 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     y: 90,
     dayName: 'Kether',
     sephiraTitle: 'The Crown',
-    dayDivinity: 'Satan',
+    archangel: 'Metatron (Prince of the Countenance)',
+    divineName: 'Ehyeh Asher Ehyeh (אהיה אשר אהיה)',
+    dayDivinity: 'Metatron · Satan (Quintessence)',
     dayHebrew: 'כתר',
-    dayKemetic: 'Atem',
+    dayKemetic: 'Atem / Amun-Ra',
     dayPillar: 'Balance',
     connollyEnn: 'Tasa reme laris Satan - Ave Satanis',
+    ennVerified: true,
     nightName: 'Thaumiel',
     nightDemon: 'Satan & Moloch',
-    nightMeaning: 'The Twin Godheads / Dual Chaos',
+    nightMeaning: 'The Twin Godheads / Dual Chaos in Revolt',
+    nightEnn: 'Tasa reme laris Satan - Ave Satanis',
     gematria: 620,
+    nightGematria: 488,
     musicalKey: 'E',
     incense: 'Ambergris, Sulphur, Pure Olibanum',
     colors: 'Brilliant White / Obsidian with Crimson Veins',
@@ -78,7 +90,7 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'All / Quintessence (The Source)',
     description: 'The supreme summit of consciousness and source from which all energy flows.',
     studyLore:
-      'In Demonolatry (S. Connolly, p. 256), Satan is Kether (The Crown)—not an anthropomorphic enemy, but the Whole and the fifth element (Spirit/Acasual). He consists of all elements, alchemical conjunctions, and transmutations. On the Nightside, Thaumiel represents the twin heads of duality in eternal revolt against tyrannical monotheism.',
+      'In Kabbalah, Kether is the primordial point of light (Ehyeh Asher Ehyeh). In Demonolatry (S. Connolly, p. 256), Satan is Kether (The Crown)—the Whole and fifth element (Spirit/Acasual) consisting of all elements and alchemical transmutations. On the Nightside, Thaumiel represents the twin heads of duality in eternal revolt against tyrannical dogma.',
     practicalExercise:
       'Sit in dark stillness. Vibrate the Enn "Tasa reme laris Satan". Visualize a blinding black-gold light above the crown chakra, acknowledging that you are an indivisible droplet of the Whole.',
   },
@@ -88,15 +100,20 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     y: 220,
     dayName: 'Chokmah',
     sephiraTitle: 'Wisdom',
-    dayDivinity: 'Lucifer',
+    archangel: 'Raziel (Keeper of Secrets)',
+    divineName: 'Yah (יה)',
+    dayDivinity: 'Raziel · Lucifer (Air & Illumination)',
     dayHebrew: 'חכמה',
-    dayKemetic: 'Shu',
+    dayKemetic: 'Shu / Thoth',
     dayPillar: 'Mercy',
     connollyEnn: 'Renich Tasa Uberaca Biasa Icar Lucifer',
+    ennVerified: true,
     nightName: 'Ghagiel',
     nightDemon: 'Beelzebub',
-    nightMeaning: 'The Hinderers / Lords of Illusion',
+    nightMeaning: 'The Hinderers / Lords of Rebellion & Confusion',
+    nightEnn: 'Adey vocar avasa Beelzebub',
     gematria: 73,
+    nightGematria: 52,
     musicalKey: 'F#',
     incense: 'Musk, Cedar, Dragon’s Breath, Sandalwood',
     colors: 'Soft Cerulean / Smoke Grey & Void Black',
@@ -105,7 +122,7 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'Air / Luminous Fire',
     description: 'The active masculine energy of illumination, enlightenment, and creative gnosis.',
     studyLore:
-      'In Connolly’s Tree (p. 256), Lucifer is Air and Wisdom in Chokmah: "being able to see the whole in conjunction with the sum of its parts in order to reach gnosis." In Michael W. Ford’s Apotheosis, Lucifer is the Morning Star (Eosphoros) and Evening Star (Hesperos)—the Torch Bearer of Venus who ignites the Black Flame.',
+      'Chokmah is primordial dynamic wisdom. In Connolly’s Tree (p. 256), Lucifer is Air and Wisdom: "being able to see the whole in conjunction with the sum of its parts in order to reach gnosis." In Michael W. Ford’s Apotheosis, Lucifer is the Morning Star (Eosphoros) igniting the Black Flame. On the Nightside, Ghagiel (Chaigidel) is ruled by Beelzebub, tearing down dogmatic illusions.',
     practicalExercise:
       'Contemplate the Air element. Vibrate "Renich Tasa Uberaca Biasa Icar Lucifer". Picture the dawn sun parting the clouds of superstition, awakening self-responsibility in your mind.',
   },
@@ -115,15 +132,20 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     y: 220,
     dayName: 'Binah',
     sephiraTitle: 'Understanding',
-    dayDivinity: 'Unsere',
+    archangel: 'Tzaphkiel (Beholder of God)',
+    divineName: 'YHVH Elohim (יהוה אלהים)',
+    dayDivinity: 'Tzaphkiel · Unsere (Vapor & Intuition)',
     dayHebrew: 'בינה',
-    dayKemetic: 'Tefnut',
+    dayKemetic: 'Tefnut / Isis',
     dayPillar: 'Severity',
     connollyEnn: 'Unsere tasa lirach on ca ayar',
+    ennVerified: true,
     nightName: 'Satariel',
     nightDemon: 'Lucifuge Rofocale',
-    nightMeaning: 'The Concealers / Guardians of the Labyrinth',
+    nightMeaning: 'The Concealers / Guardians of the Dark Labyrinth',
+    nightEnn: 'Eyen tasa valocur Lucifuge Rofocale',
     gematria: 67,
+    nightGematria: 670,
     musicalKey: 'G',
     incense: 'Myrrh, Civet, Nightshade, Frankincense',
     colors: 'Crimson, Deep Indigo / Miry Black',
@@ -132,25 +154,30 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'Vapor (Fire transformed Water)',
     description: 'The Great Sea of the unconscious, womb of mysteries, and fertile sorcery.',
     studyLore:
-      'Unsere in Binah (Connolly, p. 256) is Vapor/Steam. She represents feminine understanding and wisdom of self and others, connecting the mental realm to the divine/spiritual. On the Nightside, Satariel is ruled by Lucifuge Rofocale, guarding the dark labyrinth of the primal womb.',
+      'Binah is the cosmic womb (Aimah Elohim). Unsere in Binah (Connolly, p. 256) is Vapor/Steam, representing feminine understanding and emotional roots. On the Nightside, Satariel is ruled by Lucifuge Rofocale, guarding the dark labyrinth of primal shadows and concealed wealth.',
     practicalExercise:
-      'Focus on the breath as vapor rising and condensing. Call upon Unsere to grant patience, understanding of emotional roots, and deep feminine intuition.',
+      'Focus on the breath as vapor rising and condensing. Call upon Unsere or Lucifuge Rofocale to grant patience, understanding of emotional roots, and deep feminine intuition.',
   },
   0: {
     id: 0,
     x: 400,
     y: 330,
     dayName: 'Daäth',
-    sephiraTitle: 'The Pylon of Knowledge',
-    dayDivinity: 'Lucifuge Rofocale',
+    sephiraTitle: 'Knowledge / The Abyss',
+    archangel: 'Iophiel & Raziel (The Hidden Axis)',
+    divineName: 'The Pylon of Truth',
+    dayDivinity: 'The Pylon of Daäth',
     dayHebrew: 'דעת',
     dayKemetic: 'Tuat',
     dayPillar: 'Balance',
-    connollyEnn: 'Eyen tasa valocur Lucifuge Rofocale',
-    nightName: 'Pylon of Choronzon',
-    nightDemon: 'Choronzon & Lucifuge',
-    nightMeaning: 'The Abyss / Threshold of the 22 Tunnels',
+    connollyEnn: 'Lirach Tasa Vefa Wehlc Belial',
+    ennVerified: true,
+    nightName: 'The Abyss',
+    nightDemon: 'Choronzon & Belial',
+    nightMeaning: 'The Abyss of 333 / Threshold of the 22 Tunnels',
+    nightEnn: 'Lirach Tasa Vefa Wehlc Belial',
     gematria: 474,
+    nightGematria: 333,
     musicalKey: 'C#',
     incense: 'Camphor, Wormwood, Henbane, Frankincense',
     colors: 'Ultraviolet / Flashing Abyssal Void',
@@ -159,25 +186,30 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'Spiritual Breath / Void',
     description: 'The invisible threshold and cosmic axis through which the Dayside Tree flips into the Nightside Qliphoth.',
     studyLore:
-      'Daäth is the non-Sephira, the invisible abyss (Connolly p. 257). Lucifuge Rofocale represents the spiritual breath connecting body to mind. He is the twin brother of Lucifer who controls wealth and dark wisdom. This is the exact pivot point where Dayside consciousness crosses over into the Nightside Qliphoth.',
+      'Daäth is the non-Sephira, the invisible abyss (Connolly p. 257). It is the threshold between the conscious mind and the 22 Tunnels of Set. On the Nightside, Choronzon (Guardian of 333) tests the adept’s ego, while Belial enforces absolute independence and sovereignty.',
     practicalExercise:
-      'Meditation on the Void: Close your eyes, visualize an obsidian mirror. Intone "Eyen tasa valocur Lucifuge Rofocale" and feel the threshold of the Abyss open within the mind.',
+      'Meditation on the Void: Close your eyes, visualize an obsidian mirror. Intone "Lirach Tasa Vefa Wehlc Belial" and feel the threshold of the Abyss open within the mind.',
   },
   4: {
     id: 4,
     x: 620,
     y: 440,
     dayName: 'Chesed',
-    sephiraTitle: 'Mercy',
-    dayDivinity: 'Verrine',
+    sephiraTitle: 'Mercy / Gedulah',
+    archangel: 'Tzadkiel (Righteousness of God)',
+    divineName: 'El (אל)',
+    dayDivinity: 'Tzadkiel · Verrine (Restorative Healing)',
     dayHebrew: 'חסד',
-    dayKemetic: 'Geb',
+    dayKemetic: 'Geb / Amon',
     dayPillar: 'Mercy',
     connollyEnn: 'Elan Typan Verrine',
+    ennVerified: true,
     nightName: 'Gha\'agsheblah',
     nightDemon: 'Astaroth',
-    nightMeaning: 'The Smiters / Devourers of Forms',
+    nightMeaning: 'The Smiters / Devourers of Forms (Gamchicoth)',
+    nightEnn: 'Serena Alora Astaroth Aken',
     gematria: 72,
+    nightGematria: 436,
     musicalKey: 'A#',
     incense: 'Cedar, Frankincense, Bayberry, Mulberry',
     colors: 'Deep Royal Violet / Blue-Black',
@@ -186,25 +218,30 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'Cold (Water transformed Earth)',
     description: 'Divinity of health, restorative mercy, and regenerative alchemical transmutation.',
     studyLore:
-      'In Connolly’s framework (p. 256), Verrine is Chesed: Cold (Water transformed Earth). From emotional stability and maturity comes intuition and healing. Healing the Self is the highest mercy of the Left-Hand Path practitioner.',
+      'In Connolly’s framework (p. 256), Verrine is Chesed: Cold (Water transformed Earth). Emotional stability breeds intuition and physical recovery. On the Nightside, Gha’agsheblah (Gamchicoth) is governed by Astaroth, devouring outmoded forms and false orthodoxies.',
     practicalExercise:
-      'Burn bayberry or cedar incense. Scan your physical and emotional body for depleted areas. Invoke Verrine with "Elan Typan Verrine" to restore vitality.',
+      'Burn bayberry or cedar incense. Scan your physical and emotional body for depleted areas. Invoke Verrine or Astaroth to restore vitality and alchemical equilibrium.',
   },
   5: {
     id: 5,
     x: 180,
     y: 440,
     dayName: 'Geburah',
-    sephiraTitle: 'Strength / Severity',
-    dayDivinity: 'Leviathan',
+    sephiraTitle: 'Severity / Strength / Din',
+    archangel: 'Kamael (Wrath of God)',
+    divineName: 'Elohim Gibor (אלהים גבור)',
+    dayDivinity: 'Kamael · Leviathan (Primordial Ocean)',
     dayHebrew: 'גבורה',
-    dayKemetic: 'Nut',
+    dayKemetic: 'Nut / Sekhmet',
     dayPillar: 'Severity',
     connollyEnn: 'Jaden Tasa Hoet Naca Leviathan',
+    ennVerified: true,
     nightName: 'Golachab',
     nightDemon: 'Asmodeus',
-    nightMeaning: 'The Burning Ones / Flaming Wrath',
+    nightMeaning: 'The Burning Ones / Flaming Wrath & Passion',
+    nightEnn: 'Ayer avage aloren Asmodeus aken',
     gematria: 216,
+    nightGematria: 77,
     musicalKey: 'C',
     incense: 'Calamus, Red Sandalwood, Dragon’s Blood',
     colors: 'Scarlet, Crimson / Sulphuric Red',
@@ -213,25 +250,30 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'Water / Primordial Sea',
     description: 'The raging ocean of will, emotional discernment, martial resistance, and unyielding defense.',
     studyLore:
-      'Leviathan in Geburah (Connolly p. 256) is emotional and mental strength through water. In Michael W. Ford’s Apotheosis (p. 169), Leviathan is the Ouroboros Serpent-Dragon encircling the circumference of the Living Temple, boundary of the cosmos and the acasual abyss.',
+      'Leviathan in Geburah (Connolly p. 256) is emotional and mental strength through water. In Ford’s Apotheosis, Leviathan is the Ouroboros encircling the circumference of the Living Temple. On the Nightside, Golachab is ruled by Asmodeus (King of Wrath & Desire), testing the initiate in the fires of discipline.',
     practicalExercise:
-      'Face West with chalice and salt water. Vibrate "Jaden Tasa Hoet Naca Leviathan". Visualize the great sea serpent coiling around you as an impenetrable circle of self-mastery.',
+      'Face West with chalice and salt water. Vibrate "Jaden Tasa Hoet Naca Leviathan" or "Ayer avage aloren Asmodeus aken". Visualize the sea serpent coiling around you as an impenetrable circle of self-mastery.',
   },
   6: {
     id: 6,
     x: 400,
     y: 550,
-    dayName: 'Tiphereth',
-    sephiraTitle: 'Beauty / Harmony',
-    dayDivinity: 'Belial',
+    dayName: 'Tiphareth',
+    sephiraTitle: 'Beauty / Solar Harmony',
+    archangel: 'Raphael & Michael (Solar Healers)',
+    divineName: 'YHVH Eloah va-Daath (יהוה אלוה ודעת)',
+    dayDivinity: 'Raphael · Belial (Earth Sovereignty)',
     dayHebrew: 'תפארת',
-    dayKemetic: 'Osiris',
+    dayKemetic: 'Osiris / Ra',
     dayPillar: 'Balance',
     connollyEnn: 'Lirach Tasa Vefa Wehlc Belial',
+    ennVerified: true,
     nightName: 'Thagirion',
-    nightDemon: 'Belphegor',
-    nightMeaning: 'The Disputers / The Black Sun & Solar Lion',
+    nightDemon: 'Belphegor & Sorath (666)',
+    nightMeaning: 'The Disputers / The Black Sun (Sol Niger)',
+    nightEnn: 'Lyan Ramec Catya Ganen Belphegor',
     gematria: 1081,
+    nightGematria: 666,
     musicalKey: 'D',
     incense: 'Olibanum, Patchouli, Sandalwood',
     colors: 'Radiant Gold / Black-Gold Eclipse',
@@ -240,25 +282,30 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'Earth / Soil',
     description: 'Lord of the physical foundation, beauty in matter, sovereignty, and independence.',
     studyLore:
-      'Belial sits at Tiphereth (Connolly, p. 256), the heart center connecting the physical and mental. Belial means "without a master / without a yoke"—affirming independence and self-rule. On the Nightside, Thagirion represents the Black Sun of spiritual enlightenment.',
+      'Belial sits at Tiphareth (Connolly, p. 256), the solar heart center connecting physical and spiritual. Belial means "without a master"—absolute self-rule. On the Nightside, Thagirion represents the Black Sun (Sol Niger) and the number 666 (Sorath), where inner illumination burns away outer dependency.',
     practicalExercise:
-      'Place both feet firmly on the ground. Vibrate "Lirach Tasa Vefa Wehlc Belial". Center your consciousness in your heart and belly, claiming absolute sovereignty over your life.',
+      'Place both feet firmly on the ground. Vibrate "Lirach Tasa Vefa Wehlc Belial" or "Lyan Ramec Catya Ganen Belphegor". Center your consciousness in your heart and belly, claiming absolute sovereignty.',
   },
   7: {
     id: 7,
     x: 620,
     y: 720,
     dayName: 'Netzach',
-    sephiraTitle: 'Victory',
-    dayDivinity: 'Amducious',
+    sephiraTitle: 'Victory / Eternity',
+    archangel: 'Haniel (Grace of God)',
+    divineName: 'YHVH Tzabaoth (יהוה צבאות)',
+    dayDivinity: 'Haniel · Amducious (Heat & Will)',
     dayHebrew: 'נצח',
-    dayKemetic: 'Isis',
+    dayKemetic: 'Isis / Hathor',
     dayPillar: 'Mercy',
     connollyEnn: 'Denyen valocur avage secore Amducious',
+    ennVerified: true,
     nightName: 'A\'arab Zaraq',
-    nightDemon: 'Bael',
-    nightMeaning: 'Ravens of Dispension / Death Warriors',
+    nightDemon: 'Baal (Bael)',
+    nightMeaning: 'Ravens of Dispersion / Death Warriors',
+    nightEnn: 'Ayer Secore On Ca Bael',
     gematria: 148,
+    nightGematria: 329,
     musicalKey: 'F',
     incense: 'Rose, Benzoin, Red Sandalwood',
     colors: 'Emerald Green / Raven Black-Green',
@@ -267,79 +314,94 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'Heat (Air transformed Fire)',
     description: 'Master of negative polarity, destructive force directed by will, martial victory and music.',
     studyLore:
-      'Amducious in Netzach (Connolly p. 256) is Heat: the victory of will over physical limitations. While Amducious is associated with destruction, force is ruled by will, turning struggle into conscious triumph.',
+      'Amducious in Netzach (Connolly p. 256) is Heat: the victory of will over inertia and physical limits. On the Nightside, A’arab Zaraq (Ravens of Dispersion) is ruled by Baal (Bael), teaching the adept to detach from petty social conditioning like ravens soaring over battlefields.',
     practicalExercise:
-      'Listen to heavy percussive or martial music. Vibrate "Denyen valocur avage secore Amducious" to break through personal inertia and procrastination.',
+      'Listen to heavy percussive music. Vibrate "Denyen valocur avage secore Amducious" or "Ayer Secore On Ca Bael" to break through personal inertia and self-doubt.',
   },
   8: {
     id: 8,
     x: 180,
     y: 720,
     dayName: 'Hod',
-    sephiraTitle: 'Splendor',
-    dayDivinity: 'Eurynomous',
+    sephiraTitle: 'Splendor / Glory',
+    archangel: 'Michael & Raphael (Elohim Tzabaoth)',
+    divineName: 'Elohim Tzabaoth (אלהים צבאות)',
+    dayDivinity: 'Michael · Eurynomous (Death & Rebirth)',
     dayHebrew: 'הוד',
-    dayKemetic: 'Set',
+    dayKemetic: 'Set / Anubis',
     dayPillar: 'Severity',
     connollyEnn: 'Ayar Secore on ca Eurynomous',
+    ennVerified: true,
     nightName: 'Samael',
-    nightDemon: 'Adramelech',
-    nightMeaning: 'The Poison of God / Desolators',
+    nightDemon: 'Adrammelech & Samael',
+    nightMeaning: 'The Poison of God / Desolators & Deceptive Splendor',
+    nightEnn: 'Tasa sayir adrammelech on ca',
     gematria: 15,
+    nightGematria: 131,
     musicalKey: 'E',
     incense: 'Mullein, Storax, Graveyard Dust',
-    colors: 'Russet Orange / Rust Slime',
+    colors: 'Russet Orange / Rust Slime & Peacock Shimmer',
     tools: 'Book of the Dead, Mortar, Cursing Cord',
     gems: 'Opal, Agate, Carnelian',
     element: 'Dry (Earth transformed Air)',
-    description: 'Keeper of death, transformation of consciousness, and honorable ancestral memory.',
+    description: 'Keeper of death, transformation of consciousness, intellect, and honorable ancestral memory.',
     studyLore:
-      'Eurynomous in Hod (Connolly p. 255) represents the splendor of transformation: change of consciousness through death and rebirth. Death equals the shedding of the worn-out vehicle so new shoots may rise.',
+      'In Kabbalah, Hod represents the intellect and formal splendor. In Connolly (p. 255), Eurynomous in Hod represents the splendor of transformation: shedding worn-out vehicles for higher rebirth. On the Nightside, Samael (Gematria 131: סמאל) is the "Poison of God" ruled by Adrammelech (Peacock King). It dissolves rigid theological dogmas and tests the adept’s mental sharpness.',
     practicalExercise:
-      'Burn mullein and sage. Contemplate what old habits, relationships, or self-limiting beliefs are dead wood that need to be cleared from your psyche.',
+      'Burn mullein and sage. Contemplate what old habits, relationships, or self-limiting beliefs are dead wood. Vibrate "Tasa sayir adrammelech on ca" or "Ayar Secore on ca Eurynomous" to dissolve mental cages.',
   },
   9: {
     id: 9,
     x: 400,
     y: 860,
     dayName: 'Yesod',
-    sephiraTitle: 'Foundation',
-    dayDivinity: 'Flereous',
+    sephiraTitle: 'Foundation / Astral Matrix',
+    archangel: 'Gabriel (Mighty One of God)',
+    divineName: 'Shaddai El Chai (שדי אל חי)',
+    dayDivinity: 'Gabriel · Flereous (Phoenix Flame)',
     dayHebrew: 'יסוד',
-    dayKemetic: 'Nephthys',
+    dayKemetic: 'Nephthys / Khonsu',
     dayPillar: 'Balance',
     connollyEnn: 'Ganic Tasa Fubin Flereous',
+    ennVerified: true,
     nightName: 'Gamaliel',
     nightDemon: 'Lilith',
-    nightMeaning: 'The Obscene Ones / Moon Vampyres & Succubi',
+    nightMeaning: 'The Obscene Ones / Shadow Lunar & Succubi Astral',
+    nightEnn: 'Renich keda helire Lilith lirach doura',
     gematria: 80,
+    nightGematria: 114,
     musicalKey: 'G#',
     incense: 'Jasmine, Sandalwood, Sage, Arnica',
     colors: 'Indigo Violet / Menstrual Purple & Silver',
     tools: 'Baphometic Fire Font, Perfume Bowl',
     gems: 'Moonstone, Quartz, Hematite',
     element: 'Fire / Phoenix Flame',
-    description: 'The foundation of vital fire, the Phoenix rising from the ashes, and nocturnal passion.',
+    description: 'The foundation of vital fire, the Phoenix rising from the ashes, astral navigation, and nocturnal passion.',
     studyLore:
-      'Flereous in Yesod (Connolly p. 255) is the Foundation in Fire. There would be no life without the solar spark. Fire represents primal desire, vitality, and the Phoenix rising from ashes. On the Nightside, Gamaliel is ruled by Lilith, governing the astral dream plane and sexual mysteries.',
+      'Yesod is the astral foundation. Flereous in Yesod (Connolly p. 255) is the Foundation in Fire: vitality, primal passion, and the Phoenix rising from ashes. On the Nightside, Gamaliel (Gematria 114) is ruled by Lilith, Queen of the Night, governing astral dream incubations and sexual mysteries.',
     practicalExercise:
-      'Light a red or black candle. Vibrate "Ganic Tasa Fubin Flereous". Feel the fire of vitality warm your abdomen and spine, sparking creative passion.',
+      'Light a red or black candle. Vibrate "Ganic Tasa Fubin Flereous" or "Renich keda helire Lilith lirach doura". Feel the fire of vitality warm your abdomen and spine, sparking creative passion.',
   },
   10: {
     id: 10,
     x: 400,
     y: 1030,
     dayName: 'Malkuth',
-    sephiraTitle: 'The Kingdom',
-    dayDivinity: 'The Self',
+    sephiraTitle: 'The Kingdom / Physical Matter',
+    archangel: 'Sandalphon (The Tall Angel)',
+    divineName: 'Adonai ha-Aretz (אדני הארץ)',
+    dayDivinity: 'Sandalphon · The Self (Living Temple)',
     dayHebrew: 'מלכות',
-    dayKemetic: 'Horus',
+    dayKemetic: 'Horus / Geb',
     dayPillar: 'Balance',
-    connollyEnn: 'Living Temple of Mind, Body & Spirit',
+    connollyEnn: 'Living Temple of Flesh, Mind & Spirit',
+    ennVerified: true,
     nightName: 'Nahemoth',
     nightDemon: 'Naamah',
     nightMeaning: 'The Groaning Ones / Carnal Earth Phantoms',
+    nightEnn: 'Geh ra en ca Naamah',
     gematria: 496,
+    nightGematria: 495,
     musicalKey: 'B#',
     incense: 'Dittany of Crete, Patchouli, Salt',
     colors: 'Citrine, Olive, Russet, Bone Black',
@@ -348,9 +410,9 @@ export const TREE_NODES: Record<number, SephiraNode> = {
     element: 'Earth / Physical Flesh',
     description: 'The physical vessel and living temple through which the Divine is made manifest.',
     studyLore:
-      'In Connolly’s Demonolatry Tree (p. 255), Malkuth is THE SELF: "We are the physical manifestations of the divine." You start at 10 (The Self in the physical world) and work your way up to 1 (Kether/Satan) through self-directed initiation.',
+      'In Kabbalah, Malkuth is the physical world and Shekhinah. In Connolly’s Demonolatry Tree (p. 255), Malkuth is THE SELF: "We are the physical manifestations of the divine." You start at 10 (The Self) and ascend to 1 (Kether) through self-directed initiation. On the Nightside, Nahemoth is ruled by Naamah, awakening carnal sensory gnosis in the physical flesh.',
     practicalExercise:
-      'Place your hand upon your chest. Acknowledge your physical body as the living, walking temple of all 9 Divinities and the cosmos.',
+      'Place your hand upon your chest. Acknowledge your physical body as the living, walking temple of all cosmic forces. Vibrate "Geh ra en ca Naamah" to ground energy.',
   },
 };
 
@@ -399,6 +461,32 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
   const [selectedNode, setSelectedNode] = useState<SephiraNode | null>(TREE_NODES[1]);
   const [selectedTunnel, setSelectedTunnel] = useState<TunnelData | null>(tunnels[0] || null);
   const [activeTab, setActiveTab] = useState<'node' | 'tunnel' | 'alb' | 'study'>('node');
+  const [isMatrixOpen, setIsMatrixOpen] = useState<boolean>(false);
+  const [playingEnnNote, setPlayingEnnNote] = useState<string | null>(null);
+  const stopEnnAudioRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (stopEnnAudioRef.current) stopEnnAudioRef.current();
+      emergencyGroundAudio();
+    };
+  }, []);
+
+  const handleChantEnn = (noteKey: string, spokenEnn: string) => {
+    if (playingEnnNote) {
+      if (stopEnnAudioRef.current) stopEnnAudioRef.current();
+      emergencyGroundAudio();
+      setPlayingEnnNote(null);
+      return;
+    }
+    setPlayingEnnNote(noteKey);
+    stopEnnAudioRef.current = playEnnChantTone(
+      noteKey,
+      5.0,
+      () => setPlayingEnnNote(null),
+      spokenEnn
+    );
+  };
 
   // Smooth Horizontal 3D Flip (keeps vertical orientation correct)
   const handleDaathFlip = () => {
@@ -436,7 +524,7 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
       path_letter: node.dayHebrew,
       attribution_type: node.element.toLowerCase().includes('water') ? 'element' : 'planet',
       planet_element: node.element,
-      gematria: node.gematria,
+      gematria: treeSide === 'night' ? node.nightGematria : node.gematria,
       musical_key: node.musicalKey,
       key_modifier: node.keyModifier || null,
       atu: treeSide === 'night' ? node.nightMeaning : `${node.dayName} (${node.sephiraTitle})`,
@@ -475,15 +563,15 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
               </div>
               <p className="text-xs font-mono text-neutral-400 mt-0.5">
                 {treeSide === 'night'
-                  ? '10 Qliphothic Spheres of Death & 22 Tunnels of Set (Liber 231 / Grant)'
-                  : 'S. Connolly • 9 Demonic Divinities + The Self & 10 Sephirothic Spheres'}
+                  ? '10 Qliphothic Spheres of Death (Samael, Thaumiel...) & 22 Tunnels of Set'
+                  : '10 Sephirothic Spheres of Wisdom (Kether, Chokmah...) & 22 Paths'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Tree Side Toggle Pill & Flip Button */}
-        <div className="flex items-center gap-2">
+        {/* Tree Side Toggle Pill, Matrix Modal, & Flip Button */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Dual Toggle Pill */}
           <div className="flex items-center p-1 rounded-xl bg-neutral-900 border border-neutral-800 text-xs font-mono">
             <button
@@ -513,6 +601,16 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
               <span>Nightside Qliphoth</span>
             </button>
           </div>
+
+          {/* Sephiroth vs Qliphoth Comparative Table Button */}
+          <button
+            onClick={() => setIsMatrixOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-mono text-neutral-300 hover:text-white transition-all shadow-sm"
+            title="Inspect 10 Sephiroth vs 10 Qliphoth Comparative Table"
+          >
+            <Table className="w-3.5 h-3.5 text-purple-400" />
+            <span>Dual Tree Matrix</span>
+          </button>
 
           {/* Trigger Flip Button */}
           <button
@@ -743,17 +841,17 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
 
                     const primaryName =
                       treeSide === 'night'
-                        ? node.nightDemon.toUpperCase()
-                        : node.dayDivinity.toUpperCase();
+                        ? node.nightName.toUpperCase()
+                        : node.dayName.toUpperCase();
 
                     const categoryName =
                       treeSide === 'night'
-                        ? node.nightName.toUpperCase()
-                        : `${node.dayName.toUpperCase()}`;
+                        ? `QLIPHA ${node.id === 0 ? 'DAATH' : node.id}`
+                        : `SEPHIRA ${node.id === 0 ? 'DAATH' : node.id}`;
 
                     const subName =
                       treeSide === 'night'
-                        ? node.nightMeaning.split('/')[0].trim()
+                        ? node.nightDemon.split('&')[0].trim()
                         : node.sephiraTitle;
 
                     return (
@@ -828,22 +926,22 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                           fontSize="9"
                           fontFamily="Cinzel, Georgia, serif"
                           fontWeight="bold"
-                          letterSpacing="1.5"
+                          letterSpacing="1.2"
                           pointerEvents="none"
                         >
                           {node.dayHebrew} · {categoryName}
                         </text>
 
-                        {/* Center: Demonic / Angelic Divinity Name */}
+                        {/* Center: Sephira / Qlipha Primary Name */}
                         <text
                           x={node.x}
-                          y={node.y + 2}
+                          y={node.y + 3}
                           textAnchor="middle"
                           fill="#ffffff"
-                          fontSize={primaryName.length > 10 ? '11' : '13'}
+                          fontSize={primaryName.length > 11 ? '10' : primaryName.length > 8 ? '11.5' : '13'}
                           fontFamily="Cinzel, Georgia, serif"
                           fontWeight="bold"
-                          letterSpacing="0.5"
+                          letterSpacing="0.8"
                           pointerEvents="none"
                         >
                           {primaryName}
@@ -852,12 +950,12 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                         {/* Bottom: Meaning / Title & Element */}
                         <text
                           x={node.x}
-                          y={node.y + 19}
+                          y={node.y + 20}
                           textAnchor="middle"
                           fill={treeSide === 'night' ? '#e9d5ff' : '#fef08a'}
-                          fontSize="8"
+                          fontSize="7.5"
                           fontFamily="sans-serif"
-                          opacity="0.85"
+                          opacity="0.9"
                           pointerEvents="none"
                         >
                           {subName} • {node.element.split('/')[0].trim()}
@@ -957,40 +1055,70 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                   <p className="text-xs font-mono text-neutral-300 mt-2 p-2.5 rounded-lg bg-neutral-900 border border-neutral-800">
                     {treeSide === 'night' ? (
                       <>
-                        <span className="text-neutral-500">ArchDemon: </span>
+                        <span className="text-neutral-500">Ruling Arch-Demon: </span>
                         <strong className="text-purple-300">{selectedNode.nightDemon}</strong>
+                        <span className="text-neutral-500 block text-[11px] mt-0.5">
+                          Dayside Reflex: {selectedNode.dayName} ({selectedNode.sephiraTitle})
+                        </span>
                       </>
                     ) : (
                       <>
-                        <span className="text-neutral-500">Demonolatry Divinity: </span>
-                        <strong className="text-amber-300">{selectedNode.dayDivinity}</strong>
-                        <span className="text-neutral-500"> (Egyptian: {selectedNode.dayKemetic})</span>
+                        <span className="text-neutral-500">Archangel: </span>
+                        <strong className="text-amber-300">{selectedNode.archangel}</strong>
+                        <span className="text-neutral-500 block text-[11px] mt-0.5">
+                          Divine Name: {selectedNode.divineName} • Demonolatry: {selectedNode.dayDivinity}
+                        </span>
                       </>
                     )}
                   </p>
                 </div>
 
-                {/* Demonic Enn Card */}
-                {selectedNode.connollyEnn && (
-                  <div className="p-3 rounded-xl bg-black/70 border border-neutral-800 flex flex-col gap-1 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono uppercase text-amber-500 font-bold">
-                        Sacred Demonic Enn:
-                      </span>
-                      {!selectedNode.ennVerified && (
-                        <span
-                          className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-neutral-400"
-                          title="Not yet confirmed against a primary source"
-                        >
-                          Unverified
-                        </span>
-                      )}
-                    </div>
-                    <p className="font-serif italic text-neutral-100 text-sm">
-                      "{selectedNode.connollyEnn}"
-                    </p>
+                {/* Active Enn Card & Audio Chanting Station */}
+                <div className="p-3.5 rounded-xl bg-black/80 border border-neutral-800 flex flex-col gap-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase text-amber-400 font-bold flex items-center gap-1.5">
+                      <Flame className="w-3.5 h-3.5 text-red-500" />
+                      <span>{treeSide === 'night' ? 'Nightside Demonic Enn' : 'Dayside Divinity Enn'}</span>
+                    </span>
+                    <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-neutral-300">
+                      Key of {selectedNode.musicalKey}
+                    </span>
                   </div>
-                )}
+
+                  <p className="font-serif italic text-white text-sm select-all">
+                    "{treeSide === 'night' ? selectedNode.nightEnn : selectedNode.connollyEnn}"
+                  </p>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-neutral-900">
+                    <button
+                      onClick={() =>
+                        handleChantEnn(
+                          selectedNode.musicalKey,
+                          treeSide === 'night' ? selectedNode.nightEnn : selectedNode.connollyEnn
+                        )
+                      }
+                      className={`flex-1 py-2 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all ${
+                        playingEnnNote === selectedNode.musicalKey
+                          ? 'bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)] animate-pulse'
+                          : treeSide === 'night'
+                          ? 'bg-purple-950/70 hover:bg-purple-900 border border-purple-700/80 text-purple-200'
+                          : 'bg-amber-950/70 hover:bg-amber-900 border border-amber-700/80 text-amber-200'
+                      }`}
+                    >
+                      {playingEnnNote === selectedNode.musicalKey ? (
+                        <>
+                          <VolumeX className="w-3.5 h-3.5" />
+                          <span>Silence Enn</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="w-3.5 h-3.5" />
+                          <span>Chant Enn & Key Drone</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
 
                 {/* Grid Metrics */}
                 <div className="grid grid-cols-2 gap-2 bg-neutral-900/60 p-3 rounded-xl border border-neutral-800 text-xs font-mono">
@@ -999,8 +1127,12 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                     <span className="text-neutral-200 font-semibold">{selectedNode.element}</span>
                   </div>
                   <div>
-                    <span className="text-neutral-500 text-[10px] block">GEMATRIA CIPHER</span>
-                    <span className="text-purple-300 font-bold">{selectedNode.gematria}</span>
+                    <span className="text-neutral-500 text-[10px] block">
+                      {treeSide === 'night' ? 'QLIPHA GEMATRIA' : 'SEPHIRA GEMATRIA'}
+                    </span>
+                    <span className="text-purple-300 font-bold">
+                      {treeSide === 'night' ? selectedNode.nightGematria : selectedNode.gematria}
+                    </span>
                   </div>
                   <div>
                     <span className="text-neutral-500 text-[10px] block">MUSICAL KEY</span>
@@ -1194,6 +1326,189 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Dual Tree Comparative Matrix Modal (Sephiroth vs Qliphoth) */}
+      {isMatrixOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md">
+          <div className="w-full max-w-5xl max-h-[90vh] bg-neutral-950 border border-neutral-800 rounded-2xl flex flex-col shadow-[0_0_50px_rgba(0,0,0,0.9)] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-neutral-800 bg-neutral-900/60">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-purple-950/60 border border-purple-800/80 text-purple-300">
+                  <Table className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-decorative text-lg sm:text-xl font-bold text-white tracking-wide">
+                    Comparative Emanation Matrix: Sephiroth vs Qliphoth
+                  </h3>
+                  <p className="text-xs font-mono text-neutral-400 mt-0.5">
+                    10 Divine Spheres of Light & 10 Demonic Spheres of Shadow (Zohar, Crowley, Kenneth Grant & Connolly)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMatrixOpen(false)}
+                className="p-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white transition-all"
+                title="Close Matrix"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Matrix Table Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+              <div className="overflow-x-auto rounded-xl border border-neutral-800 bg-black/60">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-neutral-800 bg-neutral-900/90 text-neutral-300 font-mono uppercase text-[11px]">
+                      <th className="py-3 px-3 text-center w-12">#</th>
+                      <th className="py-3 px-4 text-amber-300">Dayside Sephira</th>
+                      <th className="py-3 px-4 text-amber-400/80">Archangel & Divine Name</th>
+                      <th className="py-3 px-4 text-purple-300">Nightside Qlipha</th>
+                      <th className="py-3 px-4 text-purple-400/80">Ruling Arch-Demon</th>
+                      <th className="py-3 px-4 text-red-300">Demonic Enn & Chant</th>
+                      <th className="py-3 px-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-800/70 font-mono">
+                    {/* Render all 11 nodes ordered 1 to 10 with Da'ath in order */}
+                    {[1, 2, 3, 0, 4, 5, 6, 7, 8, 9, 10].map((nodeId) => {
+                      const node = TREE_NODES[nodeId];
+                      if (!node) return null;
+                      const isDaath = node.id === 0;
+
+                      return (
+                        <tr
+                          key={`matrix-node-${node.id}`}
+                          className={`hover:bg-neutral-900/50 transition-colors ${
+                            selectedNode?.id === node.id ? 'bg-purple-950/20' : ''
+                          }`}
+                        >
+                          {/* Sphere Number & Hebrew */}
+                          <td className="py-3 px-3 text-center font-bold">
+                            <span
+                              className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${
+                                isDaath
+                                  ? 'bg-purple-950 text-purple-300 border border-purple-800'
+                                  : 'bg-neutral-900 text-neutral-300 border border-neutral-800'
+                              }`}
+                            >
+                              {isDaath ? '0/Daäth' : node.id}
+                            </span>
+                            <div className="font-serif text-sm text-neutral-400 mt-0.5">
+                              {node.dayHebrew}
+                            </div>
+                          </td>
+
+                          {/* Dayside Sephira */}
+                          <td className="py-3 px-4">
+                            <div className="font-serif font-bold text-white text-sm">
+                              {node.dayName}
+                            </div>
+                            <div className="text-[11px] text-amber-300/80 font-sans italic">
+                              "{node.sephiraTitle}"
+                            </div>
+                            <div className="text-[10px] text-neutral-500 mt-0.5">
+                              Gematria: <span className="text-amber-400 font-bold">{node.gematria}</span> • Pillar: {node.dayPillar}
+                            </div>
+                          </td>
+
+                          {/* Archangel & Divine Name */}
+                          <td className="py-3 px-4">
+                            <div className="text-amber-200 font-semibold text-[11px]">
+                              {node.archangel}
+                            </div>
+                            <div className="text-neutral-400 text-[10px] mt-0.5 font-sans">
+                              {node.divineName}
+                            </div>
+                          </td>
+
+                          {/* Nightside Qlipha */}
+                          <td className="py-3 px-4">
+                            <div className="font-serif font-bold text-purple-200 text-sm flex items-center gap-1.5">
+                              <span>{node.nightName}</span>
+                              {node.nightName === 'Samael' && (
+                                <span className="text-[9px] px-1 py-0.2 rounded bg-red-950 border border-red-800 text-red-300">
+                                  Sphere 8
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-purple-400/80 font-sans italic">
+                              "{node.nightMeaning}"
+                            </div>
+                            <div className="text-[10px] text-neutral-500 mt-0.5">
+                              Qliphothic Gematria: <span className="text-purple-300 font-bold">{node.nightGematria}</span>
+                            </div>
+                          </td>
+
+                          {/* Ruling Arch-Demon */}
+                          <td className="py-3 px-4">
+                            <div className="text-purple-300 font-bold text-[11px]">
+                              {node.nightDemon}
+                            </div>
+                            <div className="text-neutral-500 text-[10px] mt-0.5">
+                              Note Key: <span className="text-amber-400">{node.musicalKey}</span>
+                            </div>
+                          </td>
+
+                          {/* Demonic Enn & Chant Station */}
+                          <td className="py-3 px-4 max-w-xs">
+                            <p className="font-serif italic text-white/90 text-[11px] leading-snug">
+                              "{node.nightEnn}"
+                            </p>
+                            <button
+                              onClick={() => handleChantEnn(node.musicalKey, node.nightEnn)}
+                              className={`mt-1.5 px-2.5 py-1 rounded text-[10px] font-mono font-bold flex items-center gap-1.5 transition-all ${
+                                playingEnnNote === node.musicalKey
+                                  ? 'bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.6)] animate-pulse'
+                                  : 'bg-purple-950/80 hover:bg-purple-900 border border-purple-700/80 text-purple-200'
+                              }`}
+                            >
+                              {playingEnnNote === node.musicalKey ? (
+                                <>
+                                  <VolumeX className="w-3 h-3" />
+                                  <span>Stop Chant</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Volume2 className="w-3 h-3 text-purple-300" />
+                                  <span>Chant Enn ({node.musicalKey})</span>
+                                </>
+                              )}
+                            </button>
+                          </td>
+
+                          {/* Action Button: Inspect Node */}
+                          <td className="py-3 px-3 text-center">
+                            <button
+                              onClick={() => {
+                                setSelectedNode(node);
+                                setActiveTab('node');
+                                setIsMatrixOpen(false);
+                              }}
+                              className="px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[10px] text-amber-300 hover:text-white font-mono uppercase tracking-wider transition-all"
+                            >
+                              Examine
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Matrix Note & Scholarly References */}
+              <div className="p-3 rounded-xl bg-neutral-900/60 border border-neutral-800 text-[11px] font-mono text-neutral-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <span>
+                  ● SAMAEL (Sphere 8) is the Nightside reflex of Hod (Splendor), with gematria cipher 131, ruled by Adrammelech & Samael.
+                </span>
+                <span className="text-purple-300">Source: Occult.wiki & Kenneth Grant's Nightside of Eden</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

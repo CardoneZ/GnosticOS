@@ -5,6 +5,7 @@ import {
 } from '../../db/grimoireSeeds';
 import { playEnnChantTone, emergencyGroundAudio } from '../audio/audioManager';
 import SacredSigil, { getGoetiaSvgPath } from '../sigils/SacredSigil';
+import SanctumDropdown from '../ui/SanctumDropdown';
 import {
   BookOpen,
   Search,
@@ -213,74 +214,66 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
           )}
         </div>
 
-        {/* Filter Controls */}
+        {/* Filter Controls (Using Sanctum Custom Dropdowns) */}
         <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
-          {/* Pantheon Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-neutral-500 text-[11px]">Pantheon:</span>
-            <select
-              value={selectedPantheon}
-              onChange={(e) => setSelectedPantheon(e.target.value)}
-              className="bg-neutral-900 border border-neutral-800 rounded px-2.5 py-1 text-neutral-200 text-xs focus:border-red-500 focus:outline-none"
-            >
-              <option value="all">All Pantheons ({ALL_GRIMOIRE_ENTITIES.length})</option>
-              <option value="demonic_divinity">Demonic Divinities (Lucifer, Baphomet, etc.)</option>
-              <option value="goetia">72 Goetia</option>
-              <option value="dukante_family">39 Dukanté Hierarchs</option>
-              <option value="draconian">Draconian & Chaos</option>
-            </select>
-          </div>
+          <SanctumDropdown
+            label="Pantheon:"
+            options={[
+              { value: 'all', label: 'All Pantheons', badge: `${ALL_GRIMOIRE_ENTITIES.length}` },
+              { value: 'demonic_divinity', label: 'Demonic Divinities', sublabel: 'Lucifer, Baphomet, etc.' },
+              { value: 'goetia', label: '72 Goetia', sublabel: 'Lemegeton Spirits' },
+              { value: 'dukante_family', label: '39 Dukanté Hierarchs', sublabel: 'Connolly System' },
+              { value: 'draconian', label: 'Draconian & Chaos', sublabel: 'Primal Void' },
+            ]}
+            value={selectedPantheon}
+            onChange={setSelectedPantheon}
+            width="w-52"
+          />
 
-          {/* Current Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-neutral-500 text-[11px]">Current:</span>
-            <select
-              value={selectedCurrent}
-              onChange={(e) => setSelectedCurrent(e.target.value)}
-              className="bg-neutral-900 border border-neutral-800 rounded px-2.5 py-1 text-neutral-200 text-xs focus:border-red-500 focus:outline-none"
-            >
-              <option value="all">All Currents</option>
-              <option value="demonolatry">Demonolatry</option>
-              <option value="luciferian">Luciferian</option>
-              <option value="draconian">Draconian</option>
-              <option value="typhonian">Typhonian</option>
-            </select>
-          </div>
+          <SanctumDropdown
+            label="Current:"
+            options={[
+              { value: 'all', label: 'All Currents' },
+              { value: 'demonolatry', label: 'Demonolatry' },
+              { value: 'luciferian', label: 'Luciferian' },
+              { value: 'draconian', label: 'Draconian' },
+              { value: 'typhonian', label: 'Typhonian' },
+            ]}
+            value={selectedCurrent}
+            onChange={setSelectedCurrent}
+            width="w-40"
+          />
 
-          {/* Element Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-neutral-500 text-[11px]">Element:</span>
-            <select
-              value={selectedElement}
-              onChange={(e) => setSelectedElement(e.target.value)}
-              className="bg-neutral-900 border border-neutral-800 rounded px-2.5 py-1 text-neutral-200 text-xs focus:border-red-500 focus:outline-none"
-            >
-              <option value="all">All Elements</option>
-              <option value="fire">Fire</option>
-              <option value="water">Water</option>
-              <option value="air">Air</option>
-              <option value="earth">Earth</option>
-            </select>
-          </div>
+          <SanctumDropdown
+            label="Element:"
+            options={[
+              { value: 'all', label: 'All Elements' },
+              { value: 'fire', label: 'Fire', badge: '🜂' },
+              { value: 'water', label: 'Water', badge: '🜄' },
+              { value: 'air', label: 'Air', badge: '🜁' },
+              { value: 'earth', label: 'Earth', badge: '🜃' },
+            ]}
+            value={selectedElement}
+            onChange={setSelectedElement}
+            width="w-36"
+          />
 
-          {/* Purpose Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-neutral-500 text-[11px]">Purpose:</span>
-            <select
-              value={selectedPurpose}
-              onChange={(e) => setSelectedPurpose(e.target.value)}
-              className="bg-neutral-900 border border-neutral-800 rounded px-2.5 py-1 text-neutral-200 text-xs focus:border-red-500 focus:outline-none"
-            >
-              <option value="all">All Purposes</option>
-              <option value="Enlightenment">Enlightenment</option>
-              <option value="Healing">Healing</option>
-              <option value="Vengeance">Vengeance</option>
-              <option value="Wealth">Wealth</option>
-              <option value="Magick">Magick</option>
-              <option value="Protection">Protection</option>
-              <option value="Divination">Divination</option>
-            </select>
-          </div>
+          <SanctumDropdown
+            label="Purpose:"
+            options={[
+              { value: 'all', label: 'All Purposes' },
+              { value: 'Enlightenment', label: 'Enlightenment' },
+              { value: 'Healing', label: 'Healing' },
+              { value: 'Vengeance', label: 'Vengeance' },
+              { value: 'Wealth', label: 'Wealth' },
+              { value: 'Magick', label: 'Magick' },
+              { value: 'Protection', label: 'Protection' },
+              { value: 'Divination', label: 'Divination' },
+            ]}
+            value={selectedPurpose}
+            onChange={setSelectedPurpose}
+            width="w-40"
+          />
         </div>
       </div>
 

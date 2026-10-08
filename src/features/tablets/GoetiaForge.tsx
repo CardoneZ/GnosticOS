@@ -3,6 +3,7 @@ import { GOETIA_72_SPIRITS, GrimoireEntity } from '../../db/grimoireSeeds';
 import { playEnnChantTone } from '../audio/audioManager';
 import { generateTablet } from './gematria';
 import SacredSigil, { getGoetiaSvgPath } from '../sigils/SacredSigil';
+import SanctumDropdown from '../ui/SanctumDropdown';
 import {
   Flame,
   Droplets,
@@ -202,49 +203,52 @@ export const GoetiaForge: React.FC<GoetiaForgeProps> = ({
             <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
           </div>
 
-          {/* Quick Filter Selectors */}
+          {/* Quick Filter Selectors (Sanctum Dropdowns) */}
           <div className="grid grid-cols-3 gap-1.5 text-[10px] font-mono">
-            <select
+            <SanctumDropdown
+              options={[
+                { value: 'all', label: 'All Ranks' },
+                { value: 'King', label: 'King' },
+                { value: 'Duke', label: 'Duke' },
+                { value: 'Prince', label: 'Prince' },
+                { value: 'Marquis', label: 'Marquis' },
+                { value: 'President', label: 'President' },
+                { value: 'Earl', label: 'Earl' },
+                { value: 'Knight', label: 'Knight' },
+              ]}
               value={selectedRank}
-              onChange={(e) => setSelectedRank(e.target.value)}
-              className="bg-neutral-900 border border-neutral-800 rounded px-1.5 py-1 text-neutral-300 focus:outline-none"
-            >
-              <option value="all">All Ranks</option>
-              <option value="King">King</option>
-              <option value="Duke">Duke</option>
-              <option value="Prince">Prince</option>
-              <option value="Marquis">Marquis</option>
-              <option value="President">President</option>
-              <option value="Earl">Earl</option>
-              <option value="Knight">Knight</option>
-            </select>
+              onChange={setSelectedRank}
+              width="w-full"
+            />
 
-            <select
+            <SanctumDropdown
+              options={[
+                { value: 'all', label: 'All Elements' },
+                { value: 'fire', label: 'Fire', badge: '🜂' },
+                { value: 'water', label: 'Water', badge: '🜄' },
+                { value: 'air', label: 'Air', badge: '🜁' },
+                { value: 'earth', label: 'Earth', badge: '🜃' },
+              ]}
               value={selectedElement}
-              onChange={(e) => setSelectedElement(e.target.value)}
-              className="bg-neutral-900 border border-neutral-800 rounded px-1.5 py-1 text-neutral-300 focus:outline-none"
-            >
-              <option value="all">All Elements</option>
-              <option value="fire">Fire</option>
-              <option value="water">Water</option>
-              <option value="air">Air</option>
-              <option value="earth">Earth</option>
-            </select>
+              onChange={setSelectedElement}
+              width="w-full"
+            />
 
-            <select
+            <SanctumDropdown
+              options={[
+                { value: 'all', label: 'All Offices' },
+                { value: 'enlightenment', label: 'Enlightenment' },
+                { value: 'magick', label: 'Magick' },
+                { value: 'protection', label: 'Protection' },
+                { value: 'divination', label: 'Divination' },
+                { value: 'wealth', label: 'Wealth' },
+                { value: 'healing', label: 'Healing' },
+                { value: 'vengeance', label: 'Vengeance' },
+              ]}
               value={selectedPurpose}
-              onChange={(e) => setSelectedPurpose(e.target.value)}
-              className="bg-neutral-900 border border-neutral-800 rounded px-1.5 py-1 text-neutral-300 focus:outline-none"
-            >
-              <option value="all">All Offices</option>
-              <option value="enlightenment">Enlightenment</option>
-              <option value="magick">Magick</option>
-              <option value="protection">Protection</option>
-              <option value="divination">Divination</option>
-              <option value="wealth">Wealth</option>
-              <option value="healing">Healing</option>
-              <option value="vengeance">Vengeance</option>
-            </select>
+              onChange={setSelectedPurpose}
+              width="w-full"
+            />
           </div>
         </div>
 
