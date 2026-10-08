@@ -9,7 +9,6 @@ import {
 } from '../audio/useGazingAudio';
 import { TunnelData } from '../../platform/vault';
 import {
-  LuciferSigil,
   IshtarStar,
   AzhdahaSymbol,
   AlbTalisman,
@@ -21,7 +20,7 @@ import {
 } from '../audio/subliminalAudio';
 import { AudioVisualizerCanvas } from '../audio/AudioVisualizerCanvas';
 import { SonicCodexModal } from '../audio/SonicCodexModal';
-import SacredSigil from '../sigils/SacredSigil';
+import SacredSigil, { GOETIA_SVG_MAP } from '../sigils/SacredSigil';
 import {
   Play,
   Square,
@@ -53,7 +52,8 @@ export type FocalSymbolType =
   | 'ishtar'
   | 'azhdaha'
   | 'alb'
-  | 'will_desire_belief';
+  | 'will_desire_belief'
+  | `goetia_${number}`;
 export type CenterMode = 'sigil_only' | 'shader_geometry' | 'fusion' | 'pure_void';
 
 export const SanctumPortal: React.FC<SanctumPortalProps> = ({
@@ -80,7 +80,7 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
     setFocalSymbol(sym);
     if (sym === 'none') {
       setCenterMode('shader_geometry');
-    } else {
+    } else if (centerMode === 'shader_geometry') {
       setCenterMode('sigil_only');
     }
   };
@@ -248,6 +248,7 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
           colorOuter={activeColors.outer}
           glyphSeed={activeTunnel.number}
           showInnerGlyph={centerMode === 'shader_geometry' || centerMode === 'fusion'}
+          showCircles={centerMode !== 'pure_void'}
           strobe={
             strobeEnabled
               ? { acknowledgedPhotosensitivityRisk: strobeRiskAcknowledged, hz: strobeHz, depth: 0.25 }
@@ -257,7 +258,7 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
         />
 
         {/* Sacred Center Focal Glyph Overlay */}
-        {(centerMode === 'sigil_only' || centerMode === 'fusion') && focalSymbol !== 'none' && (
+        {(centerMode === 'sigil_only' || centerMode === 'fusion' || centerMode === 'pure_void') && focalSymbol !== 'none' && (
           <div
             className="absolute pointer-events-none flex items-center justify-center transition-transform duration-700 ease-out z-10"
             style={{
@@ -273,12 +274,22 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
               })`,
             }}
           >
-            {focalSymbol === 'lucifer' && <LuciferSigil size={240} glow />}
+            {focalSymbol === 'lucifer' && (
+              <SacredSigil variant="lucifer" size={260} glow color="#ef4444" alt="Sigil of Lucifer (Grimorium Verum)" />
+            )}
             {focalSymbol === 'baphomet' && (
-              <SacredSigil variant="baphomet" size={240} glow color="#ef4444" />
+              <SacredSigil variant="baphomet" size={260} glow color="#ef4444" alt="Sigil of Baphomet" />
             )}
             {focalSymbol === 'baphomet_pentagram' && (
-              <SacredSigil variant="baphomet_pentagram" size={240} glow color="#ef4444" />
+              <SacredSigil variant="baphomet_pentagram" size={260} glow color="#ef4444" alt="Baphomet Pentagram" />
+            )}
+            {focalSymbol.startsWith('goetia_') && (
+              <SacredSigil
+                variant={parseInt(focalSymbol.replace('goetia_', ''), 10)}
+                size={260}
+                glow
+                color="#ef4444"
+              />
             )}
             {focalSymbol === 'ishtar' && <IshtarStar size={240} glow />}
             {focalSymbol === 'azhdaha' && <AzhdahaSymbol size={260} glow />}
@@ -473,9 +484,9 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
             <button
               onClick={() => {
                 setCenterMode('pure_void');
-                setFocalSymbol('none');
+                if (focalSymbol === 'none') setFocalSymbol('lucifer');
               }}
-              title="Pristine scrying obsidian mirror: only outer cuneiform bands & rising black flame embers"
+              title="Demonolatry Pure Void: Sacred sigil floating alone in deep obsidian darkness without circular rings"
               className={`py-1.5 px-2 rounded text-center transition-all ${
                 centerMode === 'pure_void'
                   ? 'bg-red-950 border border-red-600 text-white font-bold shadow-[0_0_8px_rgba(239,68,68,0.4)]'
@@ -490,7 +501,7 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
           <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono pt-1">
             {(
               [
-                ['lucifer', 'Sigil of Lucifer'],
+                ['lucifer', 'Sigil of Lucifer (Verum)'],
                 ['baphomet', 'Sigil of Baphomet'],
                 ['baphomet_pentagram', 'Baphomet Pentagram'],
                 ['ishtar', 'Star of Ishtar (8-pt)'],
@@ -512,6 +523,33 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
                 {label}
               </button>
             ))}
+          </div>
+
+          {/* 72 Goetia Spirit Invocation Selector */}
+          <div className="flex flex-col gap-1.5 pt-2 border-t border-neutral-800/80">
+            <label className="text-[10px] font-mono uppercase tracking-wider text-amber-400/90 flex items-center justify-between">
+              <span>Invoke Any 72 Goetia Spirit</span>
+              {focalSymbol.startsWith('goetia_') && (
+                <span className="text-red-400 font-bold">Active: #{focalSymbol.replace('goetia_', '')}</span>
+              )}
+            </label>
+            <select
+              value={focalSymbol.startsWith('goetia_') ? focalSymbol : ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setFocalSymbol(e.target.value as FocalSymbolType);
+                  if (centerMode === 'shader_geometry') setCenterMode('sigil_only');
+                }
+              }}
+              className="w-full bg-neutral-900 border border-neutral-800 rounded px-2.5 py-1.5 text-neutral-200 text-xs font-mono focus:border-red-500 focus:outline-none"
+            >
+              <option value="">— Select Spirit to Evoke / Scry —</option>
+              {Object.entries(GOETIA_SVG_MAP).map(([numStr, item]) => (
+                <option key={numStr} value={`goetia_${numStr}`}>
+                  #{numStr} {item.slug.toUpperCase()} (Authentic Seal)
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-neutral-400">

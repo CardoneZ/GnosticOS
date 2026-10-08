@@ -48,16 +48,137 @@ export function emergencyGroundAudio(): void {
 }
 
 /**
+ * Ranks available voices prioritizing high-fidelity Microsoft Natural/Neural English voices,
+ * followed by standard Microsoft Desktop voices, Google English, and fallback English.
+ */
+export function rankNaturalVoices(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice[] {
+  const enVoices = voices.filter((v) => v.lang.toLowerCase().startsWith('en'));
+  if (enVoices.length === 0) return voices;
+
+  return [...enVoices].sort((a, b) => {
+    const scoreVoice = (v: SpeechSynthesisVoice) => {
+      const name = v.name.toLowerCase();
+      // Tier 1: Microsoft Natural / Neural online voices (Jenny, Guy, Aria, Ryan, etc.)
+      if (name.includes('natural') || name.includes('neural')) return 100;
+      if (name.includes('jenny') || name.includes('guy') || name.includes('aria') || name.includes('ryan')) return 90;
+      // Tier 2: Microsoft Desktop Windows voices (David Desktop, Zira, Mark, George)
+      if (name.includes('microsoft') && (name.includes('desktop') || name.includes('david') || name.includes('zira'))) return 70;
+      if (name.includes('microsoft')) return 60;
+      // Tier 3: Google US/UK English
+      if (name.includes('google')) return 50;
+      return 10;
+    };
+    return scoreVoice(b) - scoreVoice(a);
+  });
+}
+
+/**
+ * Returns the single most legible, natural English voice available on the host OS.
+ */
+export function pickBestNaturalVoice(voices?: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return undefined;
+  const list = voices && voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+  const ranked = rankNaturalVoices(list);
+  return ranked[0];
+}
+
+/**
+ * Spoken Demonic Enn Vocalizer
+ * Pronounces the authentic Demonic Enn with deep ritual cadence and low pitch.
+ */
+export function speakRitualEnn(
+  ennText: string,
+  options?: {
+    onEnd?: () => void;
+    rate?: number;
+    pitch?: number;
+    volume?: number;
+    voiceURI?: string;
+  }
+): () => void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    options?.onEnd?.();
+    return () => {};
+  }
+
+  // Cancel ongoing speech
+  window.speechSynthesis.cancel();
+
+  const cleanText = ennText.trim();
+  if (!cleanText) {
+    options?.onEnd?.();
+    return () => {};
+  }
+
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  const voices = window.speechSynthesis.getVoices();
+
+  if (options?.voiceURI) {
+    const found = voices.find((v) => v.voiceURI === options.voiceURI);
+    if (found) utterance.voice = found;
+  }
+  if (!utterance.voice) {
+    utterance.voice = pickBestNaturalVoice(voices) || null;
+  }
+
+  utterance.rate = options?.rate ?? 0.78; // Measured ritual cadence
+  utterance.pitch = options?.pitch ?? 0.72; // Deep resonant tone
+  utterance.volume = options?.volume ?? 0.95;
+
+  let completed = false;
+  utterance.onend = () => {
+    if (!completed) {
+      completed = true;
+      options?.onEnd?.();
+    }
+  };
+  utterance.onerror = () => {
+    if (!completed) {
+      completed = true;
+      options?.onEnd?.();
+    }
+  };
+
+  window.speechSynthesis.speak(utterance);
+
+  return () => {
+    completed = true;
+    window.speechSynthesis.cancel();
+  };
+}
+
+/**
  * Procedural Demonic Enn Chant Synthesizer
- * Synthesizes a resonant, rhythmic drone-chant harmonic tuned to the spirit's frequency.
+ * Synthesizes a resonant, rhythmic drone-chant harmonic tuned to the spirit's frequency,
+ * with concurrent spoken Enn vocalization if provided.
  */
 export function playEnnChantTone(
   noteKey: string = 'D',
-  durationSec: number = 2.5,
-  onComplete?: () => void
+  durationSec: number = 3.5,
+  onComplete?: () => void,
+  spokenEnn?: string,
+  voiceURI?: string
 ): () => void {
+  // If spoken Enn is provided, start speech in tandem
+  let cancelSpeech: (() => void) | null = null;
+  if (spokenEnn && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    cancelSpeech = speakRitualEnn(spokenEnn, {
+      voiceURI,
+      pitch: 0.68,
+      rate: 0.76,
+    });
+  }
+
   const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  if (!AudioCtx) return () => {};
+  if (!AudioCtx) {
+    const timeout = setTimeout(() => {
+      onComplete?.();
+    }, durationSec * 1000);
+    return () => {
+      clearTimeout(timeout);
+      cancelSpeech?.();
+    };
+  }
 
   const ctx = new AudioCtx();
   const unregister = registerAudioContext(ctx);
@@ -65,7 +186,7 @@ export function playEnnChantTone(
   const now = ctx.currentTime;
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, now);
-  master.gain.linearRampToValueAtTime(0.35, now + 0.4);
+  master.gain.linearRampToValueAtTime(0.38, now + 0.4);
   master.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
   master.connect(ctx.destination);
 
@@ -118,6 +239,7 @@ export function playEnnChantTone(
   }, durationSec * 1000 + 100);
 
   return () => {
+    cancelSpeech?.();
     clearTimeout(timeoutId);
     unregister();
     try {

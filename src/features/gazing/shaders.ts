@@ -34,6 +34,7 @@ uniform vec3  uColorA;       // inner glow (linear RGB)
 uniform vec3  uColorB;       // outer glow (linear RGB)
 uniform float uGlyphSeed;
 uniform float uInnerGlyph;   // 0.0 = clear obsidian core (for focal sigils), 1.0 = procedural chaos star + pentagram
+uniform float uShowCircles;  // 1.0 = ceremonial circles & cuneiform bands, 0.0 = pure obsidian void
 
 varying vec2 vUv;
 
@@ -180,19 +181,19 @@ void main() {
 
   // ---------------- 3–6. The Counter-Rotating Circle ----------------
   float m = 0.0;
-  m += stroke(abs(r - 0.93), 0.004, aa);
-  m += stroke(abs(r - 0.80), 0.003, aa);
-  m += 0.9 * glyphBand(c, 0.815, 0.915, 36.0,  uRotation,        uGlyphSeed,        aa); // deosil
-  m += stroke(abs(r - 0.70), 0.003, aa);
-  m += 0.8 * glyphBand(c, 0.615, 0.690, 24.0, -uRotation * 0.7,  uGlyphSeed + 17.0, aa); // widdershins
-  m += stroke(abs(r - 0.60), 0.0025, aa) * uInnerGlyph;
-  m += uInnerGlyph * chaosStar(rot(uRotation * 0.35) * c, 0.58, aa);                                  // deosil
-  m += stroke(abs(r - 0.40), 0.003, aa) * uInnerGlyph;
-  m += uInnerGlyph * 0.85 * pentagram(rot(-uRotation * 0.5) * c, 0.40, aa);                           // widdershins
+  m += stroke(abs(r - 0.93), 0.004, aa) * uShowCircles;
+  m += stroke(abs(r - 0.80), 0.003, aa) * uShowCircles;
+  m += 0.9 * glyphBand(c, 0.815, 0.915, 36.0,  uRotation,        uGlyphSeed,        aa) * uShowCircles; // deosil
+  m += stroke(abs(r - 0.70), 0.003, aa) * uShowCircles;
+  m += 0.8 * glyphBand(c, 0.615, 0.690, 24.0, -uRotation * 0.7,  uGlyphSeed + 17.0, aa) * uShowCircles; // widdershins
+  m += stroke(abs(r - 0.60), 0.0025, aa) * uInnerGlyph * uShowCircles;
+  m += uInnerGlyph * chaosStar(rot(uRotation * 0.35) * c, 0.58, aa) * uShowCircles;                   // deosil
+  m += stroke(abs(r - 0.40), 0.003, aa) * uInnerGlyph * uShowCircles;
+  m += uInnerGlyph * 0.85 * pentagram(rot(-uRotation * 0.5) * c, 0.40, aa) * uShowCircles;            // widdershins
 
-  float halo = 0.18 * exp(-abs(r - 0.93) * 30.0)
+  float halo = (0.18 * exp(-abs(r - 0.93) * 30.0)
              + uInnerGlyph * 0.10 * exp(-abs(r - 0.58) * 25.0)
-             + uInnerGlyph * 0.12 * exp(-abs(r - 0.40) * 30.0);
+             + uInnerGlyph * 0.12 * exp(-abs(r - 0.40) * 30.0)) * uShowCircles;
 
   // ---------------- 7. Breathing Core Yantra ----------------
   float core = exp(-r * r * mix(420.0, 110.0, breath)) * (0.6 + 0.8 * breath);

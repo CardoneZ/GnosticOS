@@ -627,7 +627,7 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                           stroke="transparent"
                           strokeWidth="24"
                         />
-                        {/* Visual Path Line */}
+                        {/* Visual Path Base Line */}
                         <line
                           x1={fromNode.x}
                           y1={fromNode.y}
@@ -635,25 +635,54 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                           y2={toNode.y}
                           stroke={pathColor}
                           strokeWidth={isSelected ? '3.5' : '1.8'}
-                          strokeDasharray={treeSide === 'night' ? '5 4' : 'none'}
-                          opacity={isSelected ? 1 : 0.65}
+                          opacity={isSelected ? 0.9 : 0.45}
                           className="transition-all duration-300 group-hover:opacity-100 group-hover:stroke-amber-400"
+                        />
+                        {/* Flowing Astral Energy Current Line */}
+                        <line
+                          x1={fromNode.x}
+                          y1={fromNode.y}
+                          x2={toNode.x}
+                          y2={toNode.y}
+                          stroke={
+                            isSelected
+                              ? treeSide === 'night'
+                                ? '#f43f5e'
+                                : '#fef08a'
+                              : treeSide === 'night'
+                              ? '#c084fc'
+                              : '#fbbf24'
+                          }
+                          strokeWidth={isSelected ? '2.4' : '1.2'}
+                          strokeDasharray="6 14"
+                          opacity={isSelected ? 1 : 0.55}
+                          className={isSelected ? 'animate-tree-current-fast' : 'animate-tree-current'}
+                          style={{
+                            filter: isSelected
+                              ? `drop-shadow(0 0 8px ${treeSide === 'night' ? '#f43f5e' : '#f59e0b'})`
+                              : undefined,
+                          }}
                         />
                         {/* Midpoint Hebrew Letter Disc */}
                         <circle
                           cx={mx}
                           cy={my}
-                          r="11"
-                          fill="#09090b"
+                          r="12"
+                          fill="#07040a"
                           stroke={pathColor}
-                          strokeWidth="1.2"
-                          className="transition-all group-hover:scale-125"
+                          strokeWidth={isSelected ? '2' : '1.2'}
+                          className="transition-all duration-300 group-hover:scale-125"
+                          style={{
+                            filter: isSelected
+                              ? `drop-shadow(0 0 10px ${pathColor})`
+                              : undefined,
+                          }}
                         />
                         <text
                           x={mx}
                           y={my + 3.5}
                           textAnchor="middle"
-                          fill={treeSide === 'night' ? '#d8b4fe' : '#fde047'}
+                          fill={treeSide === 'night' ? '#e9d5ff' : '#fef08a'}
                           fontSize="10"
                           fontFamily="serif"
                           fontWeight="bold"
@@ -666,15 +695,29 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
                   })}
                 </g>
 
-                {/* Daath Abyss Corridor */}
-                <ellipse
-                  cx={TREE_NODES[0].x}
-                  cy={TREE_NODES[0].y}
-                  rx="95"
-                  ry="48"
-                  fill="url(#daathAbyssGlow)"
-                  opacity="0.8"
-                />
+                {/* Daath Abyss Corridor & Gravitational Vortex */}
+                <g className="daath-abyss-group">
+                  <ellipse
+                    cx={TREE_NODES[0].x}
+                    cy={TREE_NODES[0].y}
+                    rx="105"
+                    ry="54"
+                    fill="url(#daathAbyssGlow)"
+                    opacity="0.85"
+                  />
+                  <ellipse
+                    cx={TREE_NODES[0].x}
+                    cy={TREE_NODES[0].y}
+                    rx="95"
+                    ry="46"
+                    fill="none"
+                    stroke={treeSide === 'night' ? '#c084fc' : '#f59e0b'}
+                    strokeWidth="1.5"
+                    strokeDasharray="8 6"
+                    className="animate-tree-current"
+                    opacity="0.6"
+                  />
+                </g>
 
                 {/* 10 Spheres + Daath Medallions */}
                 <g className="spheres-group">
@@ -835,7 +878,7 @@ export const DualTreeViewer: React.FC<DualTreeViewerProps> = ({
         </div>
 
         {/* Interactive Detail & Study Drawer (Right Column) */}
-        <div className="xl:col-span-5 2xl:col-span-4 glass-panel p-5 rounded-2xl border border-neutral-800 flex flex-col justify-between min-h-[660px] shadow-2xl">
+        <div className="xl:col-span-5 2xl:col-span-4 glass-panel p-5 rounded-2xl border border-neutral-800 flex flex-col justify-between sticky top-4 max-h-[calc(100vh-140px)] overflow-y-auto custom-scrollbar shadow-2xl">
           <div>
             {/* Drawer Tabs (4 Modes) */}
             <div className="flex rounded-xl bg-neutral-900 p-1 border border-neutral-800 text-xs font-mono mb-5 gap-1">

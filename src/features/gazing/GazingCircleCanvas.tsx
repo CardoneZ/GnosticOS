@@ -73,6 +73,8 @@ export interface GazingCircleCanvasProps {
   glyphSeed?: number;
   /** When false, clears the inner chaos star and pentagram for uncluttered focal sigil meditation */
   showInnerGlyph?: boolean;
+  /** When false, removes rotating outer cuneiform & geometric circles for pure void meditation */
+  showCircles?: boolean;
   strobe?: StrobeOptions | null;
   paused?: boolean;
   onBreathPhase?: (phase: BreathPhase) => void;
@@ -99,7 +101,7 @@ function usePrefersReducedMotion() {
 type PlaneProps = Required<
   Pick<GazingCircleCanvasProps, 'breathPattern' | 'rotationSpeed' | 'mirrorDistortion' | 'blur' | 'glyphSeed' | 'paused'>
 > &
-  Pick<GazingCircleCanvasProps, 'strobe' | 'onBreathPhase' | 'colorInner' | 'colorOuter' | 'showInnerGlyph'> & { reducedMotion: boolean };
+  Pick<GazingCircleCanvasProps, 'strobe' | 'onBreathPhase' | 'colorInner' | 'colorOuter' | 'showInnerGlyph' | 'showCircles'> & { reducedMotion: boolean };
 
 function GazingPlane(props: PlaneProps) {
   // Latest props in a ref so useFrame never captures stale values and uniforms are never re-created.
@@ -124,6 +126,7 @@ function GazingPlane(props: PlaneProps) {
       uColorB: { value: new THREE.Color('#6a1bff') },
       uGlyphSeed: { value: 0 },
       uInnerGlyph: { value: 1.0 },
+      uShowCircles: { value: 1.0 },
     }),
     [],
   );
@@ -166,6 +169,7 @@ function GazingPlane(props: PlaneProps) {
     uniforms.uGain.value = gain;
     uniforms.uGlyphSeed.value = p.glyphSeed;
     uniforms.uInnerGlyph.value = p.showInnerGlyph !== false ? 1.0 : 0.0;
+    uniforms.uShowCircles.value = p.showCircles !== false ? 1.0 : 0.0;
   });
 
   return (
@@ -194,6 +198,7 @@ export function GazingCircleCanvas({
   colorOuter = '#6a1bff',
   glyphSeed = 11,
   showInnerGlyph = true,
+  showCircles = true,
   strobe = null,
   paused = false,
   onBreathPhase,
@@ -223,6 +228,7 @@ export function GazingCircleCanvas({
           colorOuter={colorOuter}
           glyphSeed={glyphSeed}
           showInnerGlyph={showInnerGlyph}
+          showCircles={showCircles}
           strobe={strobe}
           paused={paused}
           onBreathPhase={onBreathPhase}

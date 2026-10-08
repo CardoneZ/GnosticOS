@@ -27,18 +27,84 @@
 
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #09060f;
+  background: #050208;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
 }
 ::-webkit-scrollbar-thumb {
-  background: #2b1f3d;
-  border-radius: 2px;
+  background: #7f1d1d;
+  border-radius: 4px;
+  border: 1px solid #991b1b;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4c336e;
+  background: #dc2626;
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.6);
+}
+
+/* Dedicated Panel Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #991b1b #050208;
+}
+.custom-scrollbar::-webkit-scrollbar {
+  width: 7px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #040207;
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #7f1d1d;
+  border-radius: 4px;
+  border: 1px solid #b91c1c;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #ef4444;
+}
+
+/* Tree of Life / Death Astral Current Flow Animations */
+@keyframes treeCurrentFlow {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes nodePulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes vortexSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-tree-current {
+  animation: treeCurrentFlow 2.8s linear infinite;
+}
+
+.animate-tree-current-fast {
+  animation: treeCurrentFlow 1.4s linear infinite;
+}
+
+.animate-node-pulse {
+  animation: nodePulseGlow 3s ease-in-out infinite;
 }
 
 /* Esoteric Glass & Glow utilities */

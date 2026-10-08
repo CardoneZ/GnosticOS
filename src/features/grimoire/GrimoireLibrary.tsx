@@ -3,8 +3,8 @@ import {
   ALL_GRIMOIRE_ENTITIES,
   GrimoireEntity,
 } from '../../db/grimoireSeeds';
-import { playEnnChantTone } from '../audio/audioManager';
-import SacredSigil from '../sigils/SacredSigil';
+import { playEnnChantTone, emergencyGroundAudio } from '../audio/audioManager';
+import SacredSigil, { getGoetiaSvgPath } from '../sigils/SacredSigil';
 import {
   BookOpen,
   Search,
@@ -21,6 +21,9 @@ import {
   X,
   Gem,
   Award,
+  Scroll,
+  Download,
+  FileText,
 } from 'lucide-react';
 
 interface GrimoireLibraryProps {
@@ -99,6 +102,7 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
   const handlePlayChant = (entity: GrimoireEntity, e: React.MouseEvent) => {
     e.stopPropagation();
     if (playingEnnId === entity.id) {
+      emergencyGroundAudio();
       setPlayingEnnId(null);
       return;
     }
@@ -110,9 +114,14 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
     else if (entity.element === 'air') noteKey = 'E';
     else if (entity.element === 'earth') noteKey = 'B#';
 
-    playEnnChantTone(noteKey, 3.2, () => {
-      setPlayingEnnId(null);
-    });
+    playEnnChantTone(
+      noteKey,
+      3.8,
+      () => {
+        setPlayingEnnId(null);
+      },
+      entity.enn
+    );
   };
 
   const getElementIcon = (elem?: string) => {
@@ -399,7 +408,7 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
 
         {/* Selected Spirit Arcana Panel */}
         {activeEntity && (
-          <div className="xl:col-span-5 2xl:col-span-4 glass-panel p-5 rounded-2xl border border-neutral-800 flex flex-col justify-between gap-5 sticky top-6 shadow-2xl">
+          <div className="xl:col-span-5 2xl:col-span-4 glass-panel p-5 rounded-2xl border border-neutral-800 flex flex-col justify-between gap-5 sticky top-4 max-h-[calc(100vh-130px)] overflow-y-auto custom-scrollbar shadow-2xl">
             <div className="flex flex-col gap-4">
               {/* Top Banner */}
               <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
@@ -407,16 +416,28 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
                   <Award className="w-4 h-4 text-red-400" />
                   {activeEntity.pantheon.replace('_', ' ')}
                 </span>
-                <span className="px-2.5 py-0.5 rounded text-[10px] font-mono bg-neutral-900 border border-neutral-800 text-amber-300">
-                  {activeEntity.rank || 'Hierarch'}
-                </span>
+                <div className="flex items-center gap-2">
+                  {activeEntity.goeticNumber && (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-black border border-neutral-800 text-neutral-400">
+                      Seal #{activeEntity.goeticNumber} / 72
+                    </span>
+                  )}
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-mono bg-neutral-900 border border-neutral-800 text-amber-300">
+                    {activeEntity.rank || 'Hierarch'}
+                  </span>
+                </div>
               </div>
 
-              {/* Title & Element */}
+              {/* Title, Alias & Element */}
               <div>
                 <h2 className="font-decorative text-3xl font-bold text-white">
                   {activeEntity.name}
                 </h2>
+                {activeEntity.alias && (
+                  <p className="font-serif italic text-sm text-neutral-400 mt-0.5">
+                    {activeEntity.alias}
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span className={`text-xs font-mono px-2.5 py-0.5 rounded border ${getPurposeColor(activeEntity.purpose)}`}>
                     Purpose: {activeEntity.purpose}
@@ -435,40 +456,60 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
                 </div>
               </div>
 
-              {/* Sacred Vector Seal Visualizer */}
+              {/* Sacred Vector Seal Visualizer & Download */}
               {(activeEntity.goeticNumber ||
                 activeEntity.slug === 'lucifer' ||
                 activeEntity.slug === 'baphomet') && (
-                <div className="flex items-center justify-center p-3 rounded-xl bg-black/80 border border-red-950/60 shadow-inner">
-                  <SacredSigil
-                    variant={
-                      activeEntity.slug === 'lucifer'
-                        ? 'lucifer'
-                        : activeEntity.slug === 'baphomet'
-                        ? 'baphomet'
-                        : activeEntity.goeticNumber || activeEntity.slug
-                    }
-                    size={160}
-                    glow
-                    color="#ef4444"
-                    alt={`${activeEntity.name} Sacred Sigil`}
-                  />
+                <div className="flex flex-col gap-2 p-3.5 rounded-xl bg-black/80 border border-red-950/60 shadow-inner">
+                  <div className="flex items-center justify-center py-2">
+                    <SacredSigil
+                      variant={
+                        activeEntity.slug === 'lucifer'
+                          ? 'lucifer'
+                          : activeEntity.slug === 'baphomet'
+                          ? 'baphomet'
+                          : activeEntity.goeticNumber || activeEntity.slug
+                      }
+                      size={180}
+                      glow
+                      color="#ef4444"
+                      alt={`${activeEntity.name} Sacred Sigil`}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400 pt-2 border-t border-neutral-900">
+                    <span className="text-neutral-500">Traced Historical Vector</span>
+                    <a
+                      href={
+                        activeEntity.slug === 'lucifer'
+                          ? '/svg/00-sigil-of-lucifer.svg'
+                          : activeEntity.slug === 'baphomet'
+                          ? '/svg/00-sigil-of-baphomet.svg'
+                          : getGoetiaSvgPath(activeEntity.goeticNumber || activeEntity.slug) || '#'
+                      }
+                      download={`${activeEntity.slug}-seal.svg`}
+                      className="text-red-400 hover:text-red-300 flex items-center gap-1 hover:underline"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download SVG
+                    </a>
+                  </div>
                 </div>
               )}
 
-              {/* Enn Chanting Station */}
+              {/* Enn Chanting Station (Synchronized Resonant Drone & Spoken Audio) */}
               {activeEntity.enn && (
                 <div className="p-4 rounded-xl bg-black/80 border border-red-950/60 flex flex-col gap-2.5 shadow-inner">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 flex items-center gap-1.5">
+                      <Scroll className="w-3.5 h-3.5 text-amber-400" />
                       Authentic Demonic Enn
                     </span>
                     <button
                       onClick={(e) => handlePlayChant(activeEntity, e)}
+                      title="Plays resonant musical drone chord while vocalizing the authentic Enn"
                       className="px-2.5 py-1 rounded bg-red-950 border border-red-700 text-red-200 text-xs font-mono hover:bg-red-900 transition-all flex items-center gap-1.5"
                     >
-                      <Volume2 className="w-3.5 h-3.5" />
-                      <span>{playingEnnId === activeEntity.id ? 'Chanting...' : 'Play Chant Drone'}</span>
+                      <Volume2 className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{playingEnnId === activeEntity.id ? 'Vocalizing Enn...' : 'Play Chant Drone'}</span>
                     </button>
                   </div>
 
@@ -485,13 +526,120 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
                 </div>
               )}
 
+              {/* Key Facts Table (Inspired by grimorium.lat) */}
+              <div className="flex flex-col gap-1.5 bg-neutral-950/70 p-3.5 rounded-xl border border-neutral-800 text-xs font-mono">
+                <span className="text-[11px] text-amber-400 font-semibold tracking-wider flex items-center gap-1.5 mb-1">
+                  <FileText className="w-3.5 h-3.5 text-amber-400" /> KEY SCHOLARLY FACTS
+                </span>
+                <table className="w-full text-[11px] border-collapse">
+                  <tbody>
+                    <tr className="border-b border-neutral-900">
+                      <td className="py-1 text-neutral-500 uppercase w-1/3">Rank</td>
+                      <td className="py-1 text-neutral-200 font-medium">{activeEntity.rank || 'Hierarch'}</td>
+                    </tr>
+                    {activeEntity.legions !== undefined && (
+                      <tr className="border-b border-neutral-900">
+                        <td className="py-1 text-neutral-500 uppercase">Legions</td>
+                        <td className="py-1 text-neutral-200 font-medium">{activeEntity.legions} Legions of Spirits</td>
+                      </tr>
+                    )}
+                    <tr className="border-b border-neutral-900">
+                      <td className="py-1 text-neutral-500 uppercase">Element</td>
+                      <td className="py-1 text-neutral-200 font-medium capitalize">{activeEntity.element || 'Quintessence'}</td>
+                    </tr>
+                    <tr className="border-b border-neutral-900">
+                      <td className="py-1 text-neutral-500 uppercase">Primary Office</td>
+                      <td className="py-1 text-neutral-200 font-medium">{activeEntity.purpose}</td>
+                    </tr>
+                    {activeEntity.sources && activeEntity.sources.length > 0 && (
+                      <tr>
+                        <td className="py-1 text-neutral-500 uppercase align-top">Sources</td>
+                        <td className="py-1 text-neutral-400 font-sans text-[11px] leading-relaxed">
+                          {activeEntity.sources.join(' • ')}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Classical Grimoire Appearance & Office (Inspired by grimorium.lat) */}
+              {(activeEntity.appearance || activeEntity.office) && (
+                <div className="flex flex-col gap-2.5 bg-neutral-950/70 p-3.5 rounded-xl border border-neutral-800 text-xs">
+                  {activeEntity.appearance && (
+                    <div>
+                      <strong className="text-amber-300 block font-mono text-[10px] tracking-wider uppercase mb-1">
+                        How It Appears in Antiquity
+                      </strong>
+                      <p className="font-serif italic text-neutral-300 text-xs leading-relaxed">
+                        "{activeEntity.appearance}"
+                      </p>
+                    </div>
+                  )}
+
+                  {activeEntity.office && (
+                    <div className="pt-2 border-t border-neutral-900">
+                      <strong className="text-amber-300 block font-mono text-[10px] tracking-wider uppercase mb-1">
+                        What You Ask of It (Classical Office)
+                      </strong>
+                      <p className="font-sans text-neutral-300 text-xs leading-relaxed">
+                        {activeEntity.office}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Summoning Modes: Antiquity vs Modern Demonolatry */}
+              {activeEntity.summoningMethods && (
+                <div className="flex flex-col gap-2.5 bg-neutral-950/70 p-3.5 rounded-xl border border-neutral-800 text-xs">
+                  <span className="text-[11px] text-amber-400 font-mono font-semibold tracking-wider flex items-center gap-1.5">
+                    <Scroll className="w-3.5 h-3.5 text-amber-400" /> SUMMONING & COMMUNION MODES
+                  </span>
+
+                  {activeEntity.summoningMethods.antiquity && (
+                    <div>
+                      <span className="text-neutral-400 font-mono text-[10px] uppercase block mb-0.5">
+                        In Antiquity (Solomonic Ceremonial)
+                      </span>
+                      <p className="text-neutral-400 font-sans text-xs leading-relaxed">
+                        {activeEntity.summoningMethods.antiquity}
+                      </p>
+                    </div>
+                  )}
+
+                  {activeEntity.summoningMethods.modern && (
+                    <div className="pt-2 border-t border-neutral-900">
+                      <span className="text-emerald-400 font-mono text-[10px] uppercase block mb-0.5">
+                        Modern Practice (Devotional Demonolatry)
+                      </span>
+                      <p className="text-neutral-300 font-sans text-xs leading-relaxed">
+                        {activeEntity.summoningMethods.modern}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Personal Gnosis (UPG) Section */}
+              {activeEntity.personalGnosis && (
+                <div className="bg-purple-950/30 p-3.5 rounded-xl border border-purple-900/40 text-xs">
+                  <span className="text-[11px] text-purple-300 font-mono font-semibold tracking-wider block mb-1">
+                    ✦ PERSONAL GNOSIS (UPG & EXPERIENCES)
+                  </span>
+                  <p className="text-neutral-300 font-sans text-xs leading-relaxed">
+                    {activeEntity.personalGnosis}
+                  </p>
+                </div>
+              )}
+
               {/* Full Occult Description */}
               <div className="text-xs font-sans text-neutral-300 leading-relaxed bg-neutral-950/60 p-3.5 rounded-xl border border-neutral-800/80">
                 <strong className="text-white block font-mono text-[11px] mb-1">TRADITIONAL LORE & PURPOSE:</strong>
                 {activeEntity.description}
               </div>
 
-              {/* Liber 777 Correspondences */}
+              {/* Liber 777 Correspondences & Offerings */}
               {activeEntity.correspondences && (
                 <div className="flex flex-col gap-2 bg-neutral-950/70 p-3.5 rounded-xl border border-neutral-800 text-xs font-mono">
                   <span className="text-[11px] text-amber-400 font-semibold tracking-wider flex items-center gap-1.5">
@@ -520,6 +668,18 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
                       <div>
                         <span className="text-neutral-500 block text-[10px]">CANDLE</span>
                         <span>{activeEntity.correspondences.candle}</span>
+                      </div>
+                    )}
+                    {activeEntity.correspondences.tarot && (
+                      <div>
+                        <span className="text-neutral-500 block text-[10px]">TAROT</span>
+                        <span>{activeEntity.correspondences.tarot}</span>
+                      </div>
+                    )}
+                    {activeEntity.correspondences.direction && (
+                      <div>
+                        <span className="text-neutral-500 block text-[10px]">DIRECTION</span>
+                        <span>{activeEntity.correspondences.direction}</span>
                       </div>
                     )}
                   </div>

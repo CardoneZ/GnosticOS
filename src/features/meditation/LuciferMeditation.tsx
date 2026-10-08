@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  LuciferSigil,
   IshtarStar,
   AzhdahaSymbol,
   AlbTalisman,
@@ -8,7 +7,11 @@ import {
   ishtarStarPoints,
 } from '../tree/LuciferianSymbols';
 import SacredSigil from '../sigils/SacredSigil';
-import { registerAudioContext } from '../audio/audioManager';
+import {
+  registerAudioContext,
+  rankNaturalVoices,
+  pickBestNaturalVoice,
+} from '../audio/audioManager';
 import { Play, Square, Volume2, Timer, Sparkles, AlertTriangle, Headphones } from 'lucide-react';
 
 /**
@@ -168,13 +171,6 @@ function stopDrone(d: Drone, fade: number) {
   }, (fade + 6) * 1000);
 }
 
-function pickDefaultVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
-  const en = voices.filter((v) => v.lang.toLowerCase().startsWith('en'));
-  return (
-    en.find((v) => /david|guy|mark|george|ryan/i.test(v.name)) ?? en[0] ?? voices[0]
-  );
-}
-
 // -----------------------------------------------------------------------------
 // Component
 // -----------------------------------------------------------------------------
@@ -217,13 +213,14 @@ export const LuciferMeditation: React.FC = () => {
     localStorage.setItem(ENN_STORAGE_KEY, enn);
   }, [enn]);
 
-  // Load local (on-device) voices only
+  // Load all available voices, prioritizing Microsoft Natural/Neural English voices
   useEffect(() => {
     if (!speechAvailable) return;
     const load = () => {
-      const local = window.speechSynthesis.getVoices().filter((v) => v.localService);
-      setVoices(local);
-      setVoiceURI((prev) => prev || pickDefaultVoice(local)?.voiceURI || '');
+      const allVoices = window.speechSynthesis.getVoices();
+      const ranked = rankNaturalVoices(allVoices);
+      setVoices(ranked);
+      setVoiceURI((prev) => prev || pickBestNaturalVoice(allVoices)?.voiceURI || '');
     };
     load();
     window.speechSynthesis.addEventListener('voiceschanged', load);
@@ -384,7 +381,9 @@ export const LuciferMeditation: React.FC = () => {
 
           {/* Sacred Focal Symbol, breathing */}
           <div style={{ transform: `scale(${scale})`, transition: 'transform 200ms linear' }}>
-            {focalSymbol === 'lucifer' && <LuciferSigil size={220} glow />}
+            {focalSymbol === 'lucifer' && (
+              <SacredSigil variant="lucifer" size={240} glow color="#ef4444" alt="Sigil of Lucifer (Grimorium Verum)" />
+            )}
             {focalSymbol === 'baphomet' && (
               <SacredSigil variant="baphomet" size={220} glow color="#ef4444" />
             )}
@@ -433,7 +432,7 @@ export const LuciferMeditation: React.FC = () => {
     <div className="w-full h-full overflow-y-auto bg-black text-neutral-200 p-6">
       <div className="max-w-3xl mx-auto flex flex-col gap-6">
         <header className="flex items-center gap-4 border-b border-neutral-800 pb-4">
-          <LuciferSigil size={56} />
+          <SacredSigil variant="lucifer" size={56} glow color="#ef4444" alt="Sigil of Lucifer" />
           <div>
             <h1 className="font-decorative text-2xl font-bold tracking-wider text-white">
               Lucifer Illumination Meditation
@@ -571,37 +570,52 @@ export const LuciferMeditation: React.FC = () => {
           </div>
 
           {speechAvailable ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
-              <label className="flex flex-col gap-1 text-neutral-400">
-                Voice (on-device)
-                <select
-                  value={voiceURI}
-                  onChange={(e) => setVoiceURI(e.target.value)}
-                  className="bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1.5 text-neutral-200"
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+                <label className="flex flex-col gap-1 text-neutral-400">
+                  <span className="flex items-center justify-between">
+                    <span>English Voice (TTS)</span>
+                    <span className="text-[10px] text-amber-400 font-semibold">
+                      {voices.find((v) => v.voiceURI === voiceURI)?.name.includes('Natural') ? '✦ Natural Neural' : 'Active'}
+                    </span>
+                  </span>
+                  <select
+                    value={voiceURI}
+                    onChange={(e) => setVoiceURI(e.target.value)}
+                    className="bg-neutral-900 border border-neutral-800 rounded-lg px-2 py-1.5 text-neutral-200"
+                  >
+                    {voices.length === 0 && <option value="">No English voices detected</option>}
+                    {voices.map((v) => (
+                      <option key={v.voiceURI} value={v.voiceURI}>
+                        {v.name.replace('Microsoft ', 'MS ').replace('Online (Natural)', '✦ Natural')} ({v.lang})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-neutral-400">
+                  Repeat every {ennInterval}s
+                  <input type="range" min={10} max={60} step={5} value={ennInterval} onChange={(e) => setEnnInterval(+e.target.value)} className="accent-red-600" />
+                </label>
+                <label className="flex flex-col gap-1 text-neutral-400">
+                  Enn volume {Math.round(ennVolume * 100)}%
+                  <input type="range" min={0.1} max={1} step={0.05} value={ennVolume} onChange={(e) => setEnnVolume(+e.target.value)} className="accent-red-600" />
+                </label>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800/80">
+                <button
+                  type="button"
+                  onClick={speakEnn}
+                  className="px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white flex items-center gap-1.5 text-xs font-mono"
                 >
-                  {voices.length === 0 && <option value="">No local voices found</option>}
-                  {voices.map((v) => (
-                    <option key={v.voiceURI} value={v.voiceURI}>
-                      {v.name} ({v.lang})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-neutral-400">
-                Repeat every {ennInterval}s
-                <input type="range" min={10} max={60} step={5} value={ennInterval} onChange={(e) => setEnnInterval(+e.target.value)} className="accent-red-600" />
-              </label>
-              <label className="flex flex-col gap-1 text-neutral-400">
-                Enn volume {Math.round(ennVolume * 100)}%
-                <input type="range" min={0.1} max={1} step={0.05} value={ennVolume} onChange={(e) => setEnnVolume(+e.target.value)} className="accent-red-600" />
-              </label>
-              <button
-                type="button"
-                onClick={speakEnn}
-                className="md:col-span-3 self-start px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white"
-              >
-                Preview voice
-              </button>
+                  <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                  Test Voice Pronunciation
+                </button>
+
+                <p className="text-[11px] font-mono text-neutral-500">
+                  💡 <strong>Windows Voices:</strong> Open Windows Settings → <em>Time &amp; Language</em> → <em>Speech</em> → <em>Add voices</em> to download free Microsoft Natural Voices (Jenny, Guy, Aria).
+                </p>
+              </div>
             </div>
           ) : (
             <p className="text-xs text-neutral-500">Text-to-speech isn’t available in this environment.</p>

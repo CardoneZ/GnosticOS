@@ -27,7 +27,20 @@ export interface GrimoireEntity {
     incense?: string;
     planet?: string;
     candle?: string;
+    tarot?: string;
+    direction?: string;
   };
+  // Grimorium.lat inspired scholarly & study fields
+  alias?: string;
+  legions?: number;
+  sources?: string[];
+  appearance?: string;
+  office?: string;
+  summoningMethods?: {
+    antiquity?: string;
+    modern?: string;
+  };
+  personalGnosis?: string; // UPG from S. Connolly / modern practitioners
 }
 
 // =============================================================================
@@ -356,13 +369,40 @@ export const GOETIA_72_SPIRITS: GrimoireEntity[] = [
     pantheon: 'goetia',
     current: 'demonolatry',
     element: 'water',
-    rank: 'Prince / Earl',
+    rank: 'Earl / Prince',
     goeticNumber: 22,
+    alias: '«Ayperos», «Vipos»',
+    legions: 36,
     enn: 'Desa An Ipos Ayer',
     pronunciation: 'Deh-sah Ahn Ee-pos Ah-yehr',
     purpose: 'Divination',
-    description: 'Reveals the future; confers courage, charisma, and sharp wit to timid individuals.',
-    correspondences: { metal: 'Tin / Copper', incense: 'Cedar', planet: 'Jupiter', candle: 'Dark Blue' },
+    description: 'Earl of the Ars Goetia ruling 36 legions. Knows all past, present, and future events; transforms timid individuals into bold, witty, and intellectually brave minds.',
+    correspondences: {
+      metal: 'Tin / Copper',
+      incense: 'Cedar / Sandalwood',
+      planet: 'Jupiter / Mars',
+      candle: 'Dark Blue / Violet',
+      tarot: 'Two of Cups / Four of Wands',
+      direction: 'West',
+    },
+    sources: [
+      'Ars Goetia (Lemegeton, Sloane MS 2731)',
+      'Pseudomonarchia Daemonum (Johann Weyer, 1577)',
+      'Livre des Esperitz (15th c. f181r as «Vipos»)',
+      'Mathers & Crowley Edition (1904)',
+    ],
+    appearance:
+      'Appears traditionally as an angelic entity with the fierce head of a lion, the webbed feet of a goose, and the swift tail of a hare.',
+    office:
+      'He knoweth all things past, present, and future. He maketh men wonderfully witty, eloquent, bold, and resolved.',
+    summoningMethods: {
+      antiquity:
+        'In classical Solomonic ritual, the magician remains within the protective circle while projecting the Triangle of Art, wearing the lamen bearing the seal engraved in tin or copper, and reciting the conjurations.',
+      modern:
+        'In modern Demonolatry (S. Connolly), the practitioner places the authentic bare seal upon the altar, lights cedar incense and violet candles, and rhythmically intones «Desa An Ipos Ayer» to commune with his empowering intellectual courage without coercive binding.',
+    },
+    personalGnosis:
+      'Contemporary practitioners (The Daemonolatry Goetia, 2010) seek Ipos to overcome cognitive stagnation, stage fright, and self-doubt. His presence is experienced as an intellectually empowering current that sharpens analytical wit and gives intuitive foresight into upcoming developments.',
   },
   {
     id: 123,
@@ -1566,6 +1606,7 @@ export const DEMONIC_DIVINITIES: GrimoireEntity[] = [
     element: 'air',
     rank: 'Emperor / The Morning Star',
     sephira: 'Chokmah / Thaumiel',
+    alias: '«Phosphorus», «Eosphoros», «Light-Bringer»',
     enn: 'Renich Tasa Uberaca Biasa Icar Lucifer',
     pronunciation: 'Reh-neek Tah-sah Oo-beh-rah-kah Bee-ah-sah Ee-kar Loo-see-fer',
     purpose: 'Enlightenment',
@@ -1575,7 +1616,27 @@ export const DEMONIC_DIVINITIES: GrimoireEntity[] = [
       incense: 'Frankincense & Lavender',
       planet: 'Venus (Morning Star)',
       candle: 'White / Gold / Crimson',
+      tarot: 'The Star / The Fool',
+      direction: 'East',
     },
+    sources: [
+      'Grimorium Verum (1517 / Alibeck 1880)',
+      'The Book of the Sacred Magic of Abramelin the Mage',
+      'S. Connolly (The Complete Book of Demonolatry, 2006)',
+      'Michael W. Ford (Apotheosis & Luciferian Magick)',
+    ],
+    appearance:
+      'Traditionally depicted as an illuminated angelic sovereign bearing a crown of radiant stars, or a luminous being crowned with the torch of Prometheus casting the light of intellect upon humanity.',
+    office:
+      'He bestows spiritual liberation, sovereign gnosis, awakening from superstition, and the balance of light and dark.',
+    summoningMethods: {
+      antiquity:
+        'In the Grimorium Verum, approached as the supreme Emperor of the Air through the true triple-forked seal of light and pacts of sovereignty.',
+      modern:
+        'In modern Demonolatry and Luciferianism, venerated without fear or circles; practitioners gaze upon his authentic seal while vibrating «Renich Tasa Uberaca Biasa Icar Lucifer» to awaken the Black Flame within.',
+    },
+    personalGnosis:
+      'Practitioners report his presence as an intensely clarifying, calm, and majestic intellectual resonance that banishes cowardice, inspires sovereign self-worth, and dissolves mental clouds.',
   },
   {
     id: 402,
@@ -1586,16 +1647,36 @@ export const DEMONIC_DIVINITIES: GrimoireEntity[] = [
     element: 'spirit',
     rank: 'The Sabbatic Goat & Divine Androgyne',
     sephira: 'Pillar of Balance / Kether-Malkuth Axis',
+    alias: '«Goat of Mendes», «Sabbatic Goat»',
     enn: 'Baphomet Prometheo Lux Aeterna - Solve et Coagula',
     pronunciation: 'Bah-foh-met Proh-meh-theh-oh Luks Eye-ter-nah',
     purpose: 'Magick',
     description: 'The supreme synthesis of opposites (Solve et Coagula). The Sabbatic Goat of Mendes embodying the union of spirit and matter, conscious intellect and primal instinct.',
     correspondences: {
       metal: 'Silver & Bronze',
-      incense: 'Dragon\'s Blood & Myrrh',
+      incense: "Dragon's Blood & Myrrh",
       planet: 'Saturn / Mercury',
       candle: 'Black & Red',
+      tarot: 'The Devil / Temperance',
+      direction: 'Center',
     },
+    sources: [
+      'Éliphas Lévi (Dogme et Rituel de la Haute Magie, 1856)',
+      'Trial of the Knights Templar records (1307)',
+      'Kenneth Grant (The Typhonian Trilogies)',
+    ],
+    appearance:
+      'The Sabbatic Goat with the torch of illumination between its horns, pentagram at the forehead, caduceus of Hermes at the groin, and arms bearing SOLVE and COAGULA.',
+    office:
+      'He teaches the transmutation of spiritual and material forces, the reconciliation of all polarities, and the mastery of the astral light.',
+    summoningMethods: {
+      antiquity:
+        'Revered in Templar esoteric rites as the secret head of Baphomet / Sophia (Divine Wisdom).',
+      modern:
+        'Meditated upon using the inverted pentagram seal or official goat sigil to equilibrate male and female currents, primal instincts, and celestial intellect.',
+    },
+    personalGnosis:
+      'Experienced as a profound harmonic balance where light and darkness, discipline and wildness merge into divine wholeness.',
   },
   {
     id: 403,
