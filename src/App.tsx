@@ -9,6 +9,9 @@ import CrucibleWorkbench from './features/crucible/CrucibleWorkbench';
 import ChaosWorkbench from './features/chaos/ChaosWorkbench';
 import InsightDashboard from './features/insights/InsightDashboard';
 import GrimoireLibrary from './features/grimoire/GrimoireLibrary';
+import HermeticaWorkbench from './features/hermetica/HermeticaWorkbench';
+import LuciferMeditation from './features/meditation/LuciferMeditation';
+import IlluminationWorkbench from './features/illumination/IlluminationWorkbench';
 import CommandPalette from './features/navigation/CommandPalette';
 import { GrimoireEntity } from './db/grimoireSeeds';
 import { emergencyGroundAudio } from './features/audio/audioManager';
@@ -36,6 +39,7 @@ export const App: React.FC = () => {
   const [entities, setEntities] = useState<EntityData[]>([]);
   const [activeTunnel, setActiveTunnel] = useState<TunnelData | null>(null);
   const [journalEntries, setJournalEntries] = useState<JournalEntryData[]>([]);
+  const [journalDraft, setJournalDraft] = useState<Partial<JournalEntryData> | null>(null);
 
   const loadJournal = async () => {
     const list = await fetchJournalEntries();
@@ -121,6 +125,18 @@ export const App: React.FC = () => {
     emergencyGroundAudio();
     setIsTranceActive(false);
     setIsCommandPaletteOpen(false);
+  };
+
+  const handleHermeticSendToJournal = (draft: {
+    title: string;
+    body_md: string;
+    working_type: string;
+    pre_state_label: string;
+    post_state_label: string;
+    resonance: number;
+  }) => {
+    setJournalDraft(draft);
+    setCurrentView('journal');
   };
 
   // If locked, render the Master Vault Gate
@@ -212,7 +228,26 @@ export const App: React.FC = () => {
           />
         )}
 
-        {currentView === 'tablets' && <TabletWorkbench entities={entities} />}
+        {currentView === 'meditation' && <LuciferMeditation />}
+
+        {currentView === 'illumination' && (
+          <IlluminationWorkbench
+            onSendToJournal={handleHermeticSendToJournal}
+          />
+        )}
+
+        {currentView === 'hermetica' && (
+          <HermeticaWorkbench
+            onSendToJournal={handleHermeticSendToJournal}
+          />
+        )}
+
+        {currentView === 'tablets' && (
+          <TabletWorkbench
+            entities={entities}
+            onTuneToPortal={handleTuneSpiritToPortal}
+          />
+        )}
 
         {currentView === 'tree' && (
           <DualTreeViewer
@@ -231,7 +266,12 @@ export const App: React.FC = () => {
         )}
 
         {currentView === 'journal' && (
-          <JournalWorkbench entities={entities} tunnels={tunnels} />
+          <JournalWorkbench
+            entities={entities}
+            tunnels={tunnels}
+            initialDraft={journalDraft}
+            onClearDraft={() => setJournalDraft(null)}
+          />
         )}
 
         {currentView === 'crucible' && <CrucibleWorkbench />}

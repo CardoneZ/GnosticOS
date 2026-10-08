@@ -3,16 +3,18 @@ export type WorkingType =
   | 'evocation'
   | 'pathworking'
   | 'dream'
+  | 'daily_yap'
   | 'divination'
   | 'elemental_balancing';
 
 export const WORKING_TYPE_LABELS: Record<WorkingType, { label: string; color: string }> = {
-  invocation: { label: 'Invocation', color: 'border-red-600 bg-red-950/60 text-red-200' },
-  evocation: { label: 'Evocation', color: 'border-purple-600 bg-purple-950/60 text-purple-200' },
-  pathworking: { label: 'Pathworking (Liber 231)', color: 'border-indigo-600 bg-indigo-950/60 text-indigo-200' },
-  dream: { label: 'Dream / Astral Scrying', color: 'border-blue-600 bg-blue-950/60 text-blue-200' },
-  divination: { label: 'Divination / Tarot', color: 'border-amber-600 bg-amber-950/60 text-amber-200' },
-  elemental_balancing: { label: 'Elemental Balancing', color: 'border-emerald-600 bg-emerald-950/60 text-emerald-200' },
+  invocation: { label: 'Invocation', color: 'border-red-600/70 bg-red-950/40 text-red-200' },
+  evocation: { label: 'Evocation', color: 'border-purple-600/70 bg-purple-950/40 text-purple-200' },
+  pathworking: { label: 'Pathworking (Liber 231)', color: 'border-indigo-600/70 bg-indigo-950/40 text-indigo-200' },
+  dream: { label: 'Dream Log / Astral Vision', color: 'border-blue-600/70 bg-blue-950/40 text-blue-200' },
+  daily_yap: { label: 'Stream of Thought / Daily Yap', color: 'border-amber-600/70 bg-amber-950/40 text-amber-200' },
+  divination: { label: 'Divination / Tarot', color: 'border-yellow-600/70 bg-yellow-950/40 text-yellow-200' },
+  elemental_balancing: { label: 'Elemental Balancing', color: 'border-emerald-600/70 bg-emerald-950/40 text-emerald-200' },
 };
 
 export const PRE_STATE_PRESETS = [

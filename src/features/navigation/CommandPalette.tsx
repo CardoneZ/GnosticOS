@@ -16,7 +16,9 @@ import {
   Zap,
   ArrowRight,
   Disc,
+  Feather,
 } from 'lucide-react';
+import { HERMETIC_CHAPTERS } from '../hermetica/hermeticCorpus';
 
 export interface CommandPaletteProps {
   isOpen: boolean;
@@ -24,13 +26,14 @@ export interface CommandPaletteProps {
   onNavigate: (view: ActiveView) => void;
   onSelectTunnel: (tunnel: TunnelData) => void;
   onSelectEntity?: (entity: GrimoireEntity) => void;
+  onSelectHermeticChapter?: (chapterId: number) => void;
   onStartTrance: () => void;
   onEmergencyGrounding: () => void;
 }
 
 interface PaletteItem {
   id: string;
-  category: 'tool' | 'spirit' | 'tunnel' | 'command';
+  category: 'tool' | 'spirit' | 'tunnel' | 'command' | 'hermetica';
   title: string;
   subtitle?: string;
   badge?: string;
@@ -45,6 +48,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onNavigate,
   onSelectTunnel,
   onSelectEntity,
+  onSelectHermeticChapter,
   onStartTrance,
   onEmergencyGrounding,
 }) => {
@@ -174,6 +178,30 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         },
       },
       {
+        id: 'nav-meditation',
+        category: 'tool',
+        title: 'Lucifer Illumination Meditation',
+        subtitle: 'Patron sigil gazing, theta drone & background enn chanting',
+        badge: '5 min',
+        icon: Flame,
+        onSelect: () => {
+          onNavigate('meditation');
+          onClose();
+        },
+      },
+      {
+        id: 'nav-illumination',
+        category: 'tool',
+        title: 'Illumination Forge (Will · Desire · Belief)',
+        subtitle: 'Stage II Apotheosis, Zos Kia Cultus & Black Flame',
+        badge: 'Stage II',
+        icon: Sparkles,
+        onSelect: () => {
+          onNavigate('illumination');
+          onClose();
+        },
+      },
+      {
         id: 'nav-tablets',
         category: 'tool',
         title: '9x9 Tablet Forge',
@@ -234,6 +262,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         },
       },
       {
+        id: 'nav-hermetica',
+        category: 'tool',
+        title: 'The Hermetica: Chamber of Thoth',
+        subtitle: 'The Lost Wisdom of the Pharaohs • Corpus Hermeticum (20 Books)',
+        badge: 'Thoth',
+        icon: Feather,
+        onSelect: () => {
+          onNavigate('hermetica');
+          onClose();
+        },
+      },
+      {
         id: 'nav-insights',
         category: 'tool',
         title: 'Esoteric Analytics & Insights',
@@ -245,6 +285,21 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           onClose();
         },
       },
+
+      // Hermetic Chapters (Corpus Hermeticum)
+      ...HERMETIC_CHAPTERS.map((chap): PaletteItem => ({
+        id: `hermetica-${chap.id}`,
+        category: 'hermetica',
+        title: `Book ${chap.roman}: ${chap.title}`,
+        subtitle: `"${chap.subtitle}" • Tuning: ${chap.suggestedFrequencyHz} Hz`,
+        badge: 'Thoth',
+        icon: Feather,
+        onSelect: () => {
+          onSelectHermeticChapter?.(chap.id);
+          onNavigate('hermetica');
+          onClose();
+        },
+      })),
 
       // 22 Tunnels of Set
       ...SEED_TUNNELS.map((tunnel): PaletteItem => ({

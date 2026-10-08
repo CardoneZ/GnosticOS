@@ -1,7 +1,18 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import GazingCircleCanvas, { BREATH_PRESETS, BreathPhase } from '../gazing/GazingCircleCanvas';
 import { useGazingAudio, parseNote, NoteName, SonicTexture } from '../audio/useGazingAudio';
 import { TunnelData } from '../../platform/vault';
+import {
+  LuciferSigil,
+  IshtarStar,
+  AzhdahaSymbol,
+  AlbTalisman,
+  WillDesireBeliefSymbol,
+} from '../tree/LuciferianSymbols';
+import {
+  SubliminalEngine,
+  SUBLIMINAL_PRESETS,
+} from '../audio/subliminalAudio';
 import {
   Play,
   Square,
@@ -10,6 +21,7 @@ import {
   Music,
   Zap,
   Sparkles,
+  Headphones,
 } from 'lucide-react';
 
 interface SanctumPortalProps {
@@ -20,6 +32,7 @@ interface SanctumPortalProps {
 }
 
 export type VisualPreset = 'ouroboros' | 'algol' | 'adversary' | 'sentinels' | 'black_mirror';
+export type FocalSymbolType = 'none' | 'lucifer' | 'ishtar' | 'azhdaha' | 'alb' | 'will_desire_belief';
 
 export const SanctumPortal: React.FC<SanctumPortalProps> = ({
   activeTunnel,
@@ -35,6 +48,19 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
   const [breathPatternKey, setBreathPatternKey] = useState<keyof typeof BREATH_PRESETS>('relax-4-7-8');
   const [currentPhase, setCurrentPhase] = useState<BreathPhase>('rest');
 
+  // Sacred Focal Symbol Overlay state
+  const [focalSymbol, setFocalSymbol] = useState<FocalSymbolType>('lucifer');
+  const [focalPulse, setFocalPulse] = useState<boolean>(true);
+  const [focalOpacity, setFocalOpacity] = useState<number>(0.85);
+
+  // Subliminal Audio Invocation state
+  const [subliminalActive, setSubliminalActive] = useState<boolean>(false);
+  const [subliminalPresetId, setSubliminalPresetId] = useState<string>('lucifer_illumination');
+  const [subliminalPhrase, setSubliminalPhrase] = useState<string>('');
+  const [subliminalWhisperVol, setSubliminalWhisperVol] = useState<number>(0.35);
+  const [subliminalInterval, setSubliminalInterval] = useState<number>(6);
+  const subliminalRef = useRef<SubliminalEngine | null>(null);
+
   // Audio parameters
   const [volume, setVolume] = useState<number>(0.3);
   const [beatHz, setBeatHz] = useState<number>(6.0); // 6 Hz Theta default
@@ -47,6 +73,52 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
   const [strobeEnabled, setStrobeEnabled] = useState<boolean>(false);
   const [strobeRiskAcknowledged, setStrobeRiskAcknowledged] = useState<boolean>(false);
   const [strobeHz, setStrobeHz] = useState<number>(6.0);
+
+  // Subliminal engine lifecycle & phrase sync
+  useEffect(() => {
+    return () => {
+      if (subliminalRef.current) {
+        subliminalRef.current.stop();
+        subliminalRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!subliminalActive) return;
+    const timer = setInterval(() => {
+      if (subliminalRef.current) {
+        const p = subliminalRef.current.getActivePhrase();
+        if (p) setSubliminalPhrase(p);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [subliminalActive]);
+
+  const toggleSubliminal = () => {
+    if (subliminalActive) {
+      if (subliminalRef.current) {
+        subliminalRef.current.stop();
+        subliminalRef.current = null;
+      }
+      setSubliminalActive(false);
+      setSubliminalPhrase('');
+    } else {
+      const p = SUBLIMINAL_PRESETS.find((x) => x.id === subliminalPresetId) || SUBLIMINAL_PRESETS[0];
+      const engine = new SubliminalEngine({
+        preset: p,
+        whisperVolume: subliminalWhisperVol,
+        speechIntervalSec: subliminalInterval,
+        droneVolume: 0.15,
+      });
+      const ok = engine.start();
+      if (ok) {
+        subliminalRef.current = engine;
+        setSubliminalActive(true);
+        setSubliminalPhrase(p.enn);
+      }
+    }
+  };
 
   // Preset configuration map
   const activeColors = useMemo(() => {
@@ -141,6 +213,41 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
           }
           onBreathPhase={setCurrentPhase}
         />
+
+        {/* Sacred Center Focal Glyph Overlay */}
+        {focalSymbol !== 'none' && (
+          <div
+            className="absolute pointer-events-none flex items-center justify-center transition-transform duration-700 ease-out z-10"
+            style={{
+              opacity: focalOpacity,
+              transform: `scale(${
+                focalPulse
+                  ? currentPhase === 'inhale'
+                    ? 1.08
+                    : currentPhase === 'hold'
+                    ? 1.08
+                    : 0.95
+                  : 1.0
+              })`,
+            }}
+          >
+            {focalSymbol === 'lucifer' && <LuciferSigil size={240} glow />}
+            {focalSymbol === 'ishtar' && <IshtarStar size={240} glow />}
+            {focalSymbol === 'azhdaha' && <AzhdahaSymbol size={260} glow />}
+            {focalSymbol === 'alb' && <AlbTalisman size={260} glow />}
+            {focalSymbol === 'will_desire_belief' && <WillDesireBeliefSymbol size={250} glow />}
+          </div>
+        )}
+
+        {/* Subliminal Invocation Whisper Banner (Active HUD) */}
+        {subliminalActive && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full bg-red-950/80 border border-red-700/60 shadow-[0_0_20px_rgba(220,38,38,0.45)] pointer-events-none flex items-center gap-2.5 z-20">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+            <span className="font-serif italic text-xs tracking-wider text-amber-200">
+              {subliminalPhrase || 'Demonic Subliminal Invocation Active...'}
+            </span>
+          </div>
+        )}
 
         {/* Breath Cue HUD Overlay */}
         <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-5 py-2.5 rounded-full glass-panel-glow border border-red-900/40 pointer-events-none">
@@ -257,6 +364,157 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Sacred Focal Glyphs Selector */}
+        <div className="p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <h3 className="font-serif text-xs font-bold tracking-wider uppercase text-neutral-200 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              Sacred Mirror Focal Glyph
+            </h3>
+            <span className="text-[10px] font-mono text-amber-400 font-bold">
+              {focalSymbol.toUpperCase()}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
+            {(
+              [
+                ['lucifer', 'Sigil of Lucifer'],
+                ['ishtar', 'Star of Ishtar (8-pt)'],
+                ['azhdaha', 'Azhdaha Black Dragon'],
+                ['will_desire_belief', 'Will, Desire & Belief'],
+                ['alb', 'ALB Talisman'],
+                ['none', 'Pure Void Mirror'],
+              ] as [FocalSymbolType, string][]
+            ).map(([symId, label]) => (
+              <button
+                key={symId}
+                onClick={() => setFocalSymbol(symId)}
+                className={`px-2.5 py-1.5 rounded text-left transition-all truncate ${
+                  focalSymbol === symId
+                    ? 'bg-red-950 border border-red-600 text-white font-bold shadow-[0_0_10px_rgba(220,38,38,0.4)]'
+                    : 'bg-neutral-900 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between pt-1 text-[11px] font-mono text-neutral-400">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={focalPulse}
+                onChange={(e) => setFocalPulse(e.target.checked)}
+                className="accent-red-600"
+              />
+              Pulse with Breath
+            </label>
+
+            <div className="flex items-center gap-1.5">
+              <span>Glow:</span>
+              <input
+                type="range"
+                min="0.2"
+                max="1"
+                step="0.05"
+                value={focalOpacity}
+                onChange={(e) => setFocalOpacity(Number(e.target.value))}
+                className="w-16 accent-red-500 cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Subliminal Demonic Invocation Audio Console */}
+        <div className="p-4 rounded-xl bg-red-950/20 border border-red-900/40 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Headphones className="w-3.5 h-3.5 text-red-400" />
+              <span className="font-serif text-xs font-bold uppercase tracking-wider text-neutral-100">
+                Subliminal Demonic Invocations
+              </span>
+            </div>
+            <button
+              onClick={toggleSubliminal}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-mono font-medium transition-all ${
+                subliminalActive
+                  ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_12px_rgba(220,38,38,0.6)] animate-pulse'
+                  : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-700'
+              }`}
+            >
+              {subliminalActive ? 'INVOKING' : 'ACTIVATE'}
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-1 text-[11px] font-mono">
+            <label className="text-neutral-400">Invocation Preset:</label>
+            <select
+              value={subliminalPresetId}
+              onChange={(e) => {
+                setSubliminalPresetId(e.target.value);
+                if (subliminalActive && subliminalRef.current) {
+                  const p = SUBLIMINAL_PRESETS.find((x) => x.id === e.target.value);
+                  if (p) subliminalRef.current.updateOptions({ preset: p });
+                }
+              }}
+              className="bg-neutral-900 border border-neutral-800 rounded px-2 py-1 text-neutral-200 focus:outline-none"
+            >
+              {SUBLIMINAL_PRESETS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-neutral-400">
+            <div>
+              <div className="flex justify-between mb-0.5">
+                <span>Whisper Vol</span>
+                <span>{Math.round(subliminalWhisperVol * 100)}%</span>
+              </div>
+              <input
+                type="range"
+                min="0.1"
+                max="0.8"
+                step="0.05"
+                value={subliminalWhisperVol}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setSubliminalWhisperVol(val);
+                  if (subliminalRef.current) {
+                    subliminalRef.current.updateOptions({ whisperVolume: val });
+                  }
+                }}
+                className="w-full accent-red-500 cursor-pointer"
+              />
+            </div>
+            <div>
+              <div className="flex justify-between mb-0.5">
+                <span>Interval</span>
+                <span>{subliminalInterval}s</span>
+              </div>
+              <input
+                type="range"
+                min="3"
+                max="15"
+                step="1"
+                value={subliminalInterval}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setSubliminalInterval(val);
+                  if (subliminalRef.current) {
+                    subliminalRef.current.updateOptions({ speechIntervalSec: val });
+                  }
+                }}
+                className="w-full accent-amber-500 cursor-pointer"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Integrated Audio Console */}

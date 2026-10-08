@@ -32,6 +32,11 @@ export function emergencyGroundAudio(): void {
   }
   activeAudioContexts.clear();
 
+  // Silence any spoken enns / affirmations (text-to-speech)
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+
   // Stop any HTMLAudio elements if playing
   if (typeof document !== 'undefined') {
     const audioTags = document.querySelectorAll('audio');

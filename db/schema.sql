@@ -398,7 +398,7 @@ INSERT OR IGNORE INTO entities (slug, name, pantheon, current, element, goetic_n
   ('sallos', 'Sallos', 'goetia', 'demonolatry', 'earth', 19, 'Serena Alora Sallos Aken', '{"rank":"Duke","purpose":"Magick","metal":"Copper","incense":"Sandalwood"}'),
   ('purson', 'Purson', 'goetia', 'demonolatry', 'earth', 20, 'Ana Caire Purson', '{"rank":"King","purpose":"Divination","metal":"Gold","incense":"Frankincense"}'),
   ('marax', 'Marax', 'goetia', 'demonolatry', 'earth', 21, 'Kaymen Vefa Marax', '{"rank":"President","purpose":"Enlightenment","metal":"Mercury","incense":"Storax"}'),
-  ('ipos', 'Ipos', 'goetia', 'demonolatry', 'water', 22, 'Desa On Ipos Aken', '{"rank":"Prince","purpose":"Protection","metal":"Tin","incense":"Cedar"}'),
+  ('ipos', 'Ipos', 'goetia', 'demonolatry', 'water', 22, 'Desa An Ipos Ayer', '{"rank":"Prince","purpose":"Protection","metal":"Tin","incense":"Cedar"}'),
   ('aim', 'Aim', 'goetia', 'demonolatry', 'fire', 23, 'Ayer Avage Secore Aim', '{"rank":"Duke","purpose":"Vengeance","metal":"Copper","incense":"Dragon’s Blood"}'),
   ('naberius', 'Naberius', 'goetia', 'demonolatry', 'air', 24, 'Eyan Ra Naberius On Ca', '{"rank":"Marquis","purpose":"Protection","metal":"Silver","incense":"Jasmine"}'),
   ('glasya-labolas', 'Glasya-Labolas', 'goetia', 'demonolatry', 'fire', 25, 'Elan Caire Glasya-Labolas', '{"rank":"President","purpose":"Vengeance","metal":"Mercury","incense":"Storax"}'),

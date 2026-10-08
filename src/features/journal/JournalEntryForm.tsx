@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   JournalEntryData,
   OfferingData,
@@ -21,6 +21,10 @@ import {
   Flame,
   Clock,
   Compass,
+  Mic,
+  MicOff,
+  Radio,
+  FileText,
 } from 'lucide-react';
 
 interface JournalEntryFormProps {
@@ -55,6 +59,11 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
     initialEntry?.post_state_label || POST_STATE_PRESETS[0],
   );
 
+  // Voice Dictation (Speech-to-Text) States
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [speechSupported, setSpeechSupported] = useState<boolean>(true);
+  const recognitionRef = useRef<any>(null);
+
   const [selectedEntityIds, setSelectedEntityIds] = useState<number[]>(
     initialEntry?.entities?.map((e) => e.entity_id) || [],
   );
@@ -71,6 +80,114 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
       setTitle(`${WORKING_TYPE_LABELS[workingType].label} of ${t.currentHour.correspondence.title}`);
     }
   }, [initialEntry, workingType, title]);
+
+  // Speech Recognition (Live Voice Dictation / Yap Mode)
+  useEffect(() => {
+    const SpeechRec =
+      (window as unknown as { SpeechRecognition?: any; webkitSpeechRecognition?: any }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
+
+    if (!SpeechRec) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRec();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event: any) => {
+        let finalChunk = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalChunk += event.results[i][0].transcript;
+          }
+        }
+        if (finalChunk.trim()) {
+          setBodyMd((prev) => (prev ? `${prev} ${finalChunk.trim()}` : finalChunk.trim()));
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    } catch {
+      setSpeechSupported(false);
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // Ignore
+        }
+      }
+    };
+  }, []);
+
+  const toggleVoiceDictation = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // Ignore
+      }
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        console.warn('Speech recognition start failed:', err);
+      }
+    }
+  };
+
+  const handleApplyTemplate = (type: 'ritual' | 'dream' | 'yap') => {
+    const dateStr = new Date().toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    if (type === 'dream') {
+      setWorkingType('dream');
+      setTitle(`Dream & Astral Vision — ${dateStr}`);
+      setPreStateLabel('Sleep / Hypnagogia');
+      setPostStateLabel('Astral Lucidity');
+      if (!bodyMd) {
+        setBodyMd(
+          `### Dream Log (${dateStr})\n\n**Setting & Atmosphere:**\n\n**Symbols & Figures:**\n\n**Astral Messages:**\n\n**Personal Gnosis:**\n`
+        );
+      }
+    } else if (type === 'yap') {
+      setWorkingType('daily_yap');
+      setTitle(`Stream of Thought — ${dateStr}`);
+      setPreStateLabel('Seeking Clarity');
+      setPostStateLabel('Inner Equilibrium');
+      if (!bodyMd) {
+        setBodyMd(
+          `### Daily Thoughts & Yap (${dateStr})\n\n`
+        );
+      }
+      if (speechSupported && !isListening) {
+        toggleVoiceDictation();
+      }
+    } else {
+      setWorkingType('invocation');
+      setTitle(`Ritual Working — ${dateStr}`);
+    }
+  };
 
   const toggleEntity = (id: number) => {
     setSelectedEntityIds((prev) =>
@@ -226,19 +343,65 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
         </div>
       )}
 
+      {/* Quick Journaling Modes Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+        <div className="flex items-center gap-2 text-xs font-mono text-neutral-400">
+          <FileText className="w-3.5 h-3.5 text-neutral-400" />
+          <span>Journal Mode:</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleApplyTemplate('ritual')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 ${
+              workingType !== 'dream' && workingType !== 'daily_yap'
+                ? 'bg-red-950/80 border border-red-700/60 text-red-200 font-bold'
+                : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-red-400" />
+            <span>Ritual</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleApplyTemplate('dream')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 ${
+              workingType === 'dream'
+                ? 'bg-blue-950/80 border border-blue-700/60 text-blue-200 font-bold'
+                : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Moon className="w-3.5 h-3.5 text-blue-400" />
+            <span>Dream Log</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleApplyTemplate('yap')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 ${
+              workingType === 'daily_yap'
+                ? 'bg-amber-950/80 border border-amber-700/60 text-amber-200 font-bold'
+                : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Radio className="w-3.5 h-3.5 text-amber-400" />
+            <span>Stream / Yap</span>
+          </button>
+        </div>
+      </div>
+
       {/* Main Form Fields */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Title & Text Editors */}
         <div className="lg:col-span-8 flex flex-col gap-4">
           <div className="glass-panel p-4 rounded-xl border border-neutral-800 flex flex-col gap-3">
             <label className="text-xs font-mono uppercase tracking-wider text-neutral-400">
-              Ritual Title / Intent Statement:
+              Entry Title / Statement:
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Invocation of Leviathan at the Midnight Hour..."
+              placeholder="e.g. Dream of the Obsidian Spire / Daily reflections..."
               required
               className="w-full bg-black/80 border border-neutral-700 rounded-lg px-3.5 py-2.5 font-serif text-lg text-neutral-100 focus:border-red-500 focus:outline-none"
             />
@@ -247,7 +410,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
           {/* Working Type Selector */}
           <div className="glass-panel p-4 rounded-xl border border-neutral-800 flex flex-col gap-2">
             <label className="text-xs font-mono uppercase tracking-wider text-neutral-400">
-              Working Type:
+              Category / Classification:
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {(Object.keys(WORKING_TYPE_LABELS) as WorkingType[]).map((wt) => {
@@ -271,16 +434,47 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
             </div>
           </div>
 
-          {/* Markdown Body Editor */}
+          {/* Markdown Body Editor with Voice Dictation */}
           <div className="glass-panel p-4 rounded-xl border border-neutral-800 flex flex-col gap-2">
-            <label className="text-xs font-mono uppercase tracking-wider text-neutral-400">
-              Ritual Operations, Invocations & Gnosis (Markdown):
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-mono uppercase tracking-wider text-neutral-400">
+                Journal Body / Thoughts & Operations (Markdown):
+              </label>
+              {/* Mic Voice Dictation Button */}
+              {speechSupported ? (
+                <button
+                  type="button"
+                  onClick={toggleVoiceDictation}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono transition-all border ${
+                    isListening
+                      ? 'bg-red-600 text-white border-red-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.5)] font-bold'
+                      : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white'
+                  }`}
+                  title="Speak into your microphone to transcribe text directly into the body"
+                >
+                  {isListening ? (
+                    <>
+                      <Mic className="w-3.5 h-3.5 text-white" />
+                      <span>Transcribing... (Tap to Stop)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Dictate with Mic</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <span className="text-[10px] font-mono text-neutral-500 flex items-center gap-1">
+                  <MicOff className="w-3 h-3" /> Voice dictation requires Chrome/Edge/WebKit
+                </span>
+              )}
+            </div>
             <textarea
               value={bodyMd}
               onChange={(e) => setBodyMd(e.target.value)}
-              rows={8}
-              placeholder="Record the circle casting, elemental prayers, invocations of the Enn, and astral manifestations..."
+              rows={9}
+              placeholder="Speak or type freely... Record ritual operations, channeled gnosis, dream landscapes, or stream of consciousness..."
               className="w-full bg-black/80 border border-neutral-700 rounded-lg p-3 font-mono text-xs text-neutral-100 placeholder:text-neutral-600 focus:border-red-500 focus:outline-none leading-relaxed"
             />
           </div>

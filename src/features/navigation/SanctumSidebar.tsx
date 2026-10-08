@@ -13,11 +13,16 @@ import {
   Sparkles,
   BarChart3,
   Command,
+  Feather,
+  Sun,
 } from 'lucide-react';
 import { getCurrentMagickalTiming, MagickalTiming } from '../ephemeris/planetaryHours';
 
 export type ActiveView =
   | 'portal'
+  | 'meditation'
+  | 'illumination'
+  | 'hermetica'
   | 'tablets'
   | 'tree'
   | 'grimoire'
@@ -53,6 +58,9 @@ export const SanctumSidebar: React.FC<SanctumSidebarProps> = ({
 
   const navItems = [
     { id: 'portal', label: 'Gazing Portal', icon: Eye, badge: 'WebGL' },
+    { id: 'meditation', label: 'Lucifer Meditation', icon: Sun, badge: '5 min' },
+    { id: 'illumination', label: 'Illumination Forge', icon: Flame, badge: 'Will·Desire' },
+    { id: 'hermetica', label: 'The Hermetica', icon: Feather, badge: 'Thoth' },
     { id: 'tablets', label: '9x9 Tablet Forge', icon: Compass, badge: 'Connolly' },
     { id: 'tree', label: 'The Dual Tree', icon: Network, badge: '22 Tunnels' },
     { id: 'grimoire', label: 'Grimoire Library', icon: BookMarked, badge: '72 Goetia' },

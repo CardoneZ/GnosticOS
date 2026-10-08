@@ -15,15 +15,22 @@ import {
   Mountain,
   Shield,
 } from 'lucide-react';
+import GoetiaForge from './GoetiaForge';
 import VbrkVault from './VbrkVault';
 import { EntityData } from '../../platform/vault';
+import { GrimoireEntity } from '../../db/grimoireSeeds';
+import { Crown } from 'lucide-react';
 
 interface TabletWorkbenchProps {
   entities?: EntityData[];
+  onTuneToPortal?: (spirit: GrimoireEntity) => void;
 }
 
-export const TabletWorkbench: React.FC<TabletWorkbenchProps> = ({ entities = [] }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'matrix' | 'vbrk'>('matrix');
+export const TabletWorkbench: React.FC<TabletWorkbenchProps> = ({
+  entities = [],
+  onTuneToPortal,
+}) => {
+  const [activeSubTab, setActiveSubTab] = useState<'matrix' | 'goetia' | 'vbrk'>('matrix');
   const [intentInput, setIntentInput] = useState<string>('Leviathan');
   const [cipherMode, setCipherMode] = useState<'connolly' | 'ordinal'>('connolly');
   const [copied, setCopied] = useState<boolean>(false);
@@ -81,6 +88,18 @@ export const TabletWorkbench: React.FC<TabletWorkbenchProps> = ({ entities = [] 
           </button>
 
           <button
+            onClick={() => setActiveSubTab('goetia')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono transition-all ${
+              activeSubTab === 'goetia'
+                ? 'bg-neutral-900 border border-amber-600/70 text-amber-200 font-bold shadow-[0_0_12px_rgba(217,119,6,0.35)]'
+                : 'text-neutral-500 hover:text-neutral-300'
+            }`}
+          >
+            <Crown className="w-3.5 h-3.5 text-amber-400" />
+            72 Goetia Sigils &amp; Seals Forge
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('vbrk')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-mono transition-all ${
               activeSubTab === 'vbrk'
@@ -89,13 +108,21 @@ export const TabletWorkbench: React.FC<TabletWorkbenchProps> = ({ entities = [] 
             }`}
           >
             <Shield className="w-3.5 h-3.5 text-purple-400" />
-            VBRK & Secret Demonic Name Vault
+            VBRK &amp; Secret Demonic Name Vault
           </button>
         </div>
       </div>
 
       {/* Tab Contents */}
-      {activeSubTab === 'vbrk' ? (
+      {activeSubTab === 'goetia' ? (
+        <GoetiaForge
+          onLoadIntoTablet={(name) => {
+            setIntentInput(name);
+            setActiveSubTab('matrix');
+          }}
+          onTuneToPortal={onTuneToPortal}
+        />
+      ) : activeSubTab === 'vbrk' ? (
         <VbrkVault entities={entities} />
       ) : (
         <div className="flex-1 p-6 overflow-y-auto flex flex-col gap-6">
