@@ -1,0 +1,45 @@
+export type WorkingType =
+  | 'invocation'
+  | 'evocation'
+  | 'pathworking'
+  | 'dream'
+  | 'divination'
+  | 'elemental_balancing';
+
+export const WORKING_TYPE_LABELS: Record<WorkingType, { label: string; color: string }> = {
+  invocation: { label: 'Invocation', color: 'border-red-600 bg-red-950/60 text-red-200' },
+  evocation: { label: 'Evocation', color: 'border-purple-600 bg-purple-950/60 text-purple-200' },
+  pathworking: { label: 'Pathworking (Liber 231)', color: 'border-indigo-600 bg-indigo-950/60 text-indigo-200' },
+  dream: { label: 'Dream / Astral Scrying', color: 'border-blue-600 bg-blue-950/60 text-blue-200' },
+  divination: { label: 'Divination / Tarot', color: 'border-amber-600 bg-amber-950/60 text-amber-200' },
+  elemental_balancing: { label: 'Elemental Balancing', color: 'border-emerald-600 bg-emerald-950/60 text-emerald-200' },
+};
+
+export const PRE_STATE_PRESETS = [
+  'Anxiety / Agitation',
+  'Discord / Turmoil',
+  'Mental Fog',
+  'Physical Inertia',
+  'Spiritual Emptiness',
+  'Slave Morality / Guilt',
+  'Neutral / Seeking Gnosis',
+];
+
+export const POST_STATE_PRESETS = [
+  'Grounded Equilibrium',
+  'Luciferian Illumination',
+  'Awakened Black Flame',
+  'Astral Lucidity',
+  'Draconian Sovereignty',
+  'Creative Apotheosis',
+  'Abyssal Silence',
+];
+
+export const OFFERING_PRESETS = [
+  { kind: 'incense', label: 'Incense (Dragon\'s Blood, Frankincense, Copal)' },
+  { kind: 'candle', label: 'Candle (Black, Crimson, Gold)' },
+  { kind: 'drink', label: 'Libation (Wine, Mead, Dark Beer)' },
+  { kind: 'blood', label: 'Vital Essence / Blood' },
+  { kind: 'art', label: 'Hand-drawn Sigil / Art' },
+  { kind: 'devotion', label: 'Chanted Enns / Meditation' },
+] as const;

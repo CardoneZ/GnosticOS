@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cinzel", Georgia, serif;
+  --font-decorative: "Cinzel Decorative", Georgia, serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-obsidian-950: #040206;
+  --color-obsidian-900: #09060f;
+  --color-obsidian-800: #120d1c;
+  --color-obsidian-700: #1c142b;
+
+  --color-ember-500: #ef4444;
+  --color-ember-600: #dc2626;
+  --color-ember-700: #b91c1c;
+  --color-ember-800: #991b1b;
+
+  --color-nightside-400: #a855f7;
+  --color-nightside-500: #8b5cf6;
+  --color-nightside-600: #7c3aed;
+  --color-nightside-900: #2e1065;
+
+  --color-algol-gold: #d4af37;
+  --color-algol-glow: #f59e0b;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #09060f;
+}
+::-webkit-scrollbar-thumb {
+  background: #2b1f3d;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4c336e;
+}
+
+/* Esoteric Glass & Glow utilities */
+.glass-panel {
+  background: rgba(14, 10, 22, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(139, 92, 246, 0.16);
+}
+
+.glass-panel-glow {
+  background: rgba(18, 12, 28, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(220, 38, 38, 0.28);
+  box-shadow: 0 0 25px -5px rgba(220, 38, 38, 0.15);
+}
+
+.text-gold-gradient {
+  background: linear-gradient(135deg, #f5d77f 0%, #d4af37 50%, #aa820a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-crimson-gradient {
+  background: linear-gradient(135deg, #f87171 0%, #ef4444 50%, #991b1b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

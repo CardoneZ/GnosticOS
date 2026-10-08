@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#1a0505" />
+      <stop offset="60%" stop-color="#0a0208" />
+      <stop offset="100%" stop-color="#000000" />
+    </radialGradient>
+    <linearGradient id="crimsonGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3344" />
+      <stop offset="50%" stop-color="#aa1133" />
+      <stop offset="100%" stop-color="#550011" />
+    </linearGradient>
+    <linearGradient id="goldGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffdd77" />
+      <stop offset="100%" stop-color="#b8860b" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="248" fill="url(#bg)" stroke="#7f1d1d" stroke-width="4" />
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="8 6" opacity="0.6" />
+
+  <!-- Outer Ring with Algol 8-pointed rays -->
+  <g transform="translate(256, 256)" filter="url(#glow)">
+    <!-- 8 Chaos Arrows -->
+    <g stroke="url(#crimsonGlow)" stroke-width="5" fill="none">
+      <line x1="0" y1="-50" x2="0" y2="-210" />
+      <polygon points="0,-225 -16,-195 16,-195" fill="url(#crimsonGlow)" />
+      
+      <line x1="0" y1="50" x2="0" y2="210" />
+      <polygon points="0,225 -16,195 16,195" fill="url(#crimsonGlow)" />
+
+      <line x1="-50" y1="0" x2="-210" y2="0" />
+      <polygon points="-225,0 -195,-16 -195,16" fill="url(#crimsonGlow)" />
+
+      <line x1="50" y1="0" x2="210" y2="0" />
+      <polygon points="225,0 195,-16 195,16" fill="url(#crimsonGlow)" />
+
+      <!-- Diagonals -->
+      <line x1="-35" y1="-35" x2="-148" y2="-148" />
+      <polygon points="-159,-159 -146,-125 -125,-146" fill="url(#crimsonGlow)" />
+
+      <line x1="35" y1="-35" x2="148" y2="-148" />
+      <polygon points="159,-159 125,-146 146,-125" fill="url(#crimsonGlow)" />
+
+      <line x1="-35" y1="35" x2="-148" y2="148" />
+      <polygon points="-159,159 -125,146 -146,125" fill="url(#crimsonGlow)" />
+
+      <line x1="35" y1="35" x2="148" y2="148" />
+      <polygon points="159,159 146,125 125,146" fill="url(#crimsonGlow)" />
+    </g>
+
+    <!-- Concentric Inner Circle -->
+    <circle cx="0" cy="0" r="100" fill="#050103" stroke="url(#goldGlow)" stroke-width="3" />
+    <circle cx="0" cy="0" r="80" fill="none" stroke="#7f1d1d" stroke-width="2" />
+
+    <!-- Inverted Pentagram inside core -->
+    <polygon points="
+      0,65
+      -52,-38
+      62,2
+      -62,2
+      52,-38"
+      fill="none" stroke="#ef4444" stroke-width="3.5" stroke-linejoin="round" />
+
+    <!-- Center Black Flame Core -->
+    <circle cx="0" cy="0" r="18" fill="url(#crimsonGlow)" />
+    <circle cx="0" cy="0" r="7" fill="#ffffff" />
+  </g>
+</svg>
