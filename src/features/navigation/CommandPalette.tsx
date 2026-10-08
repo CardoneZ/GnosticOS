@@ -17,6 +17,8 @@ import {
   ArrowRight,
   Disc,
   Feather,
+  ShieldAlert,
+  Crown,
 } from 'lucide-react';
 import { HERMETIC_CHAPTERS } from '../hermetica/hermeticCorpus';
 
@@ -202,6 +204,42 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         },
       },
       {
+        id: 'nav-stage-1',
+        category: 'command',
+        title: 'Stage I: Luciferian Liberation (Nigredo)',
+        subtitle: 'Sever dogmatic chains, guilt, and slave-morality conditioning',
+        badge: 'Stage I',
+        icon: ShieldAlert,
+        onSelect: () => {
+          onNavigate('illumination');
+          onClose();
+        },
+      },
+      {
+        id: 'nav-stage-2',
+        category: 'command',
+        title: 'Stage II: Luciferian Illumination (Albedo)',
+        subtitle: 'Ignite the Black Flame, Will Desire Belief alchemy',
+        badge: 'Stage II',
+        icon: Flame,
+        onSelect: () => {
+          onNavigate('illumination');
+          onClose();
+        },
+      },
+      {
+        id: 'nav-stage-3',
+        category: 'command',
+        title: 'Stage III: Luciferian Apotheosis (Rubedo)',
+        subtitle: 'Living Godhood, Daemon embodiment, subjective reality mastery',
+        badge: 'Stage III',
+        icon: Crown,
+        onSelect: () => {
+          onNavigate('illumination');
+          onClose();
+        },
+      },
+      {
         id: 'nav-tablets',
         category: 'tool',
         title: '9x9 Tablet Forge',
@@ -322,11 +360,26 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         category: 'spirit',
         title: spirit.name,
         subtitle: `${spirit.rank ? `${spirit.rank} • ` : ''}${spirit.purpose} • "${spirit.enn || spirit.description.slice(0, 50)}"`,
-        badge: spirit.element || spirit.pantheon,
+        badge: spirit.element || spirit.pantheon.replace('_', ' '),
         icon: Flame,
         onSelect: () => {
           onSelectEntity?.(spirit);
           onNavigate('grimoire');
+          onClose();
+        },
+      })),
+
+      // Direct Portal Tuning to Spirit
+      ...ALL_GRIMOIRE_ENTITIES.map((spirit): PaletteItem => ({
+        id: `tune-${spirit.id}`,
+        category: 'command',
+        title: `Tune Portal: ${spirit.name}`,
+        subtitle: `Set frequency, elemental tone & correspondence for ${spirit.name}`,
+        badge: 'Portal Tune',
+        icon: Zap,
+        onSelect: () => {
+          onSelectEntity?.(spirit);
+          onNavigate('portal');
           onClose();
         },
       })),

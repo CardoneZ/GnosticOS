@@ -40,6 +40,7 @@ export const App: React.FC = () => {
   const [activeTunnel, setActiveTunnel] = useState<TunnelData | null>(null);
   const [journalEntries, setJournalEntries] = useState<JournalEntryData[]>([]);
   const [journalDraft, setJournalDraft] = useState<Partial<JournalEntryData> | null>(null);
+  const [sigilDraftIntent, setSigilDraftIntent] = useState<string | null>(null);
 
   const loadJournal = async () => {
     const list = await fetchJournalEntries();
@@ -139,6 +140,11 @@ export const App: React.FC = () => {
     setCurrentView('journal');
   };
 
+  const handleOpenSigilForgeWithIntent = (intent: string) => {
+    setSigilDraftIntent(intent);
+    setCurrentView('chaos');
+  };
+
   // If locked, render the Master Vault Gate
   if (!isUnlocked) {
     return (
@@ -233,6 +239,8 @@ export const App: React.FC = () => {
         {currentView === 'illumination' && (
           <IlluminationWorkbench
             onSendToJournal={handleHermeticSendToJournal}
+            onNavigateToSigilForge={handleOpenSigilForgeWithIntent}
+            onTuneToPortal={handleTuneSpiritToPortal}
           />
         )}
 
@@ -260,7 +268,12 @@ export const App: React.FC = () => {
         {currentView === 'grimoire' && (
           <GrimoireLibrary
             onNavigateToJournal={() => setCurrentView('journal')}
-            onNavigateToChaos={() => setCurrentView('chaos')}
+            onNavigateToChaos={(entity) => {
+              if (entity) {
+                setSigilDraftIntent(`IT IS MY WILL TO COMMUNE WITH ${entity.name.toUpperCase()}`);
+              }
+              setCurrentView('chaos');
+            }}
             onTuneToPortal={handleTuneSpiritToPortal}
           />
         )}
@@ -279,6 +292,7 @@ export const App: React.FC = () => {
         {currentView === 'chaos' && (
           <ChaosWorkbench
             onAttachSigilToJournal={() => setCurrentView('journal')}
+            initialIntent={sigilDraftIntent}
           />
         )}
 

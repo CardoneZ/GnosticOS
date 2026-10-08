@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   generateSigil,
   SigilMatrixType,
@@ -15,14 +15,22 @@ import {
 
 interface SigilForgeProps {
   onAttachToJournal?: (svgString: string, intent: string) => void;
+  initialStatement?: string | null;
 }
 
 export const SigilForge: React.FC<SigilForgeProps> = ({
   onAttachToJournal,
+  initialStatement,
 }) => {
   const [statement, setStatement] = useState<string>(
-    'IT IS MY WILL TO COMMUNE WITH LEVIATHAN',
+    initialStatement || 'IT IS MY WILL TO COMMUNE WITH LEVIATHAN',
   );
+
+  useEffect(() => {
+    if (initialStatement && initialStatement.trim().length > 0) {
+      setStatement(initialStatement);
+    }
+  }, [initialStatement]);
   const [matrixType, setMatrixType] = useState<SigilMatrixType>('circle_8_winds');
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
   const [curveSmoothness, setCurveSmoothness] = useState<number>(0.65);

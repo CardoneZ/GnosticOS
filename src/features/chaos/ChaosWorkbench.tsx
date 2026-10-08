@@ -5,10 +5,12 @@ import { Sparkles, Activity } from 'lucide-react';
 
 interface ChaosWorkbenchProps {
   onAttachSigilToJournal?: (svgString: string, intent: string) => void;
+  initialIntent?: string | null;
 }
 
 export const ChaosWorkbench: React.FC<ChaosWorkbenchProps> = ({
   onAttachSigilToJournal,
+  initialIntent,
 }) => {
   const [activeTab, setActiveTab] = useState<'sigils' | 'servitors'>('sigils');
 
@@ -46,7 +48,10 @@ export const ChaosWorkbench: React.FC<ChaosWorkbenchProps> = ({
       {/* Main View Area */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'sigils' ? (
-          <SigilForge onAttachToJournal={onAttachSigilToJournal} />
+          <SigilForge
+            onAttachToJournal={onAttachSigilToJournal}
+            initialStatement={initialIntent}
+          />
         ) : (
           <ServitorManager />
         )}

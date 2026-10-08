@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { GOETIA_72_SPIRITS, GrimoireEntity } from '../../db/grimoireSeeds';
 import { playEnnChantTone } from '../audio/audioManager';
 import { generateTablet } from './gematria';
+import SacredSigil, { getGoetiaSvgPath } from '../sigils/SacredSigil';
 import {
   Flame,
   Droplets,
@@ -34,6 +35,7 @@ export const GoetiaForge: React.FC<GoetiaForgeProps> = ({
   const [activeSpirit, setActiveSpirit] = useState<GrimoireEntity>(GOETIA_72_SPIRITS[0]);
   const [copiedEnn, setCopiedEnn] = useState<number | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState<number | null>(null);
+  const [sealMode, setSealMode] = useState<'authentic_vector' | 'kamea_circle'>('authentic_vector');
 
   // Filtered spirit list
   const filteredSpirits = useMemo(() => {
@@ -108,6 +110,18 @@ export const GoetiaForge: React.FC<GoetiaForgeProps> = ({
   };
 
   const handleDownloadSvg = () => {
+    if (sealMode === 'authentic_vector') {
+      const svgPath = getGoetiaSvgPath(activeSpirit.goeticNumber || activeSpirit.slug);
+      if (svgPath) {
+        const link = document.createElement('a');
+        link.href = svgPath;
+        link.download = `Goetia_${activeSpirit.goeticNumber}_${activeSpirit.name}_Authentic_Seal.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+      }
+    }
     const svgElement = document.getElementById(`goetia-seal-${activeSpirit.id}`);
     if (!svgElement) return;
 
@@ -116,7 +130,7 @@ export const GoetiaForge: React.FC<GoetiaForgeProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Goetia_${activeSpirit.goeticNumber}_${activeSpirit.name}_Seal.svg`;
+    link.download = `Goetia_${activeSpirit.goeticNumber}_${activeSpirit.name}_Kamea_Seal.svg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -358,113 +372,150 @@ export const GoetiaForge: React.FC<GoetiaForgeProps> = ({
               </button>
             </div>
 
-            <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
-              {/* Sacred Vector Seal SVG */}
-              <svg
-                id={`goetia-seal-${activeSpirit.id}`}
-                viewBox="0 0 320 320"
-                className="w-full h-full drop-shadow-[0_0_20px_rgba(220,38,38,0.45)]"
+            {/* Seal View Mode Tabs */}
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-black/80 border border-neutral-800 text-[10px] font-mono mb-4">
+              <button
+                onClick={() => setSealMode('authentic_vector')}
+                className={`px-3 py-1.5 rounded transition-all ${
+                  sealMode === 'authentic_vector'
+                    ? 'bg-red-950 border border-red-600 text-white font-bold shadow-sm'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
               >
-                <defs>
-                  <radialGradient id={`sealGrad-${activeSpirit.id}`} cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#450a0a" stopOpacity="0.7" />
-                    <stop offset="60%" stopColor="#180404" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#000000" stopOpacity="0.95" />
-                  </radialGradient>
-                  <path id={`sealCircleText-${activeSpirit.id}`} d="M 30,160 A 130,130 0 1,1 290,160 A 130,130 0 1,1 30,160" fill="none" />
-                </defs>
+                Authentic Historical Seal
+              </button>
+              <button
+                onClick={() => setSealMode('kamea_circle')}
+                className={`px-3 py-1.5 rounded transition-all ${
+                  sealMode === 'kamea_circle'
+                    ? 'bg-red-950 border border-red-600 text-white font-bold shadow-sm'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Connolly 9×9 Kamea Seal
+              </button>
+            </div>
 
-                {/* Base Dark Orb */}
-                <circle cx="160" cy="160" r="150" fill={`url(#sealGrad-${activeSpirit.id})`} stroke="#dc2626" strokeWidth="2.5" />
-                <circle cx="160" cy="160" r="140" fill="none" stroke="#fca5a5" strokeWidth="1" strokeDasharray="4 4" />
-                <circle cx="160" cy="160" r="122" fill="none" stroke="#ef4444" strokeWidth="1.8" />
+            <div className="relative w-64 h-64 sm:w-72 sm:h-72 flex items-center justify-center">
+              {sealMode === 'authentic_vector' ? (
+                <div className="w-full h-full flex items-center justify-center p-2">
+                  <SacredSigil
+                    variant={activeSpirit.goeticNumber || activeSpirit.slug}
+                    size={240}
+                    glow
+                    color="#dc2626"
+                    alt={`${activeSpirit.name} Ars Goetia Seal`}
+                  />
+                </div>
+              ) : (
+                /* Connolly Gematria / Kamea Seal SVG */
+                <svg
+                  id={`goetia-seal-${activeSpirit.id}`}
+                  viewBox="0 0 320 320"
+                  className="w-full h-full drop-shadow-[0_0_20px_rgba(220,38,38,0.45)]"
+                >
+                  <defs>
+                    <radialGradient id={`sealGrad-${activeSpirit.id}`} cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#450a0a" stopOpacity="0.7" />
+                      <stop offset="60%" stopColor="#180404" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#000000" stopOpacity="0.95" />
+                    </radialGradient>
+                    <path id={`sealCircleText-${activeSpirit.id}`} d="M 30,160 A 130,130 0 1,1 290,160 A 130,130 0 1,1 30,160" fill="none" />
+                  </defs>
 
-                {/* Outer Ring Inscribed Text */}
-                <text fill="#fef2f2" fontSize="11" fontFamily="serif" fontWeight="bold" letterSpacing="4">
-                  <textPath href={`#sealCircleText-${activeSpirit.id}`} startOffset="5%">
-                    ★ {activeSpirit.name.toUpperCase()} ★ {activeSpirit.rank?.toUpperCase()} ★ GOETIA {activeSpirit.goeticNumber} ★
-                  </textPath>
-                </text>
+                  {/* Base Dark Orb */}
+                  <circle cx="160" cy="160" r="150" fill={`url(#sealGrad-${activeSpirit.id})`} stroke="#dc2626" strokeWidth="2.5" />
+                  <circle cx="160" cy="160" r="140" fill="none" stroke="#fca5a5" strokeWidth="1" strokeDasharray="4 4" />
+                  <circle cx="160" cy="160" r="122" fill="none" stroke="#ef4444" strokeWidth="1.8" />
 
-                {/* Elemental / Rank Crest Geometry */}
-                {activeSpirit.element === 'fire' && (
-                  <polygon points="160,56 226,170 94,170" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.6" />
-                )}
-                {activeSpirit.element === 'water' && (
-                  <polygon points="160,264 226,150 94,150" fill="none" stroke="#60a5fa" strokeWidth="1.5" opacity="0.6" />
-                )}
-                {activeSpirit.element === 'air' && (
-                  <>
-                    <polygon points="160,56 226,170 94,170" fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.6" />
-                    <line x1="110" y1="130" x2="210" y2="130" stroke="#fbbf24" strokeWidth="1.2" opacity="0.6" />
-                  </>
-                )}
-                {activeSpirit.element === 'earth' && (
-                  <>
-                    <polygon points="160,264 226,150 94,150" fill="none" stroke="#34d399" strokeWidth="1.5" opacity="0.6" />
-                    <line x1="110" y1="190" x2="210" y2="190" stroke="#34d399" strokeWidth="1.2" opacity="0.6" />
-                  </>
-                )}
+                  {/* Outer Ring Inscribed Text */}
+                  <text fill="#fef2f2" fontSize="11" fontFamily="serif" fontWeight="bold" letterSpacing="4">
+                    <textPath href={`#sealCircleText-${activeSpirit.id}`} startOffset="5%">
+                      ★ {activeSpirit.name.toUpperCase()} ★ {activeSpirit.rank?.toUpperCase()} ★ GOETIA {activeSpirit.goeticNumber} ★
+                    </textPath>
+                  </text>
 
-                {/* Connolly / Gematria Crossbar & Sigil Line Trace */}
-                {activeTablet && activeTablet.sigilPath.length > 1 && (
-                  <g transform="translate(40, 40) scale(0.75)">
-                    {/* Sigil lines connecting letter nodes */}
-                    {activeTablet.sigilPath.map((step, idx) => {
-                      if (idx === 0) return null;
-                      const prev = activeTablet.sigilPath[idx - 1];
-                      const x1 = 20 + prev.col * 31;
-                      const y1 = 20 + prev.row * 31;
-                      const x2 = 20 + step.col * 31;
-                      const y2 = 20 + step.row * 31;
-                      return (
+                  {/* Elemental / Rank Crest Geometry */}
+                  {activeSpirit.element === 'fire' && (
+                    <polygon points="160,56 226,170 94,170" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.6" />
+                  )}
+                  {activeSpirit.element === 'water' && (
+                    <polygon points="160,264 226,150 94,150" fill="none" stroke="#60a5fa" strokeWidth="1.5" opacity="0.6" />
+                  )}
+                  {activeSpirit.element === 'air' && (
+                    <>
+                      <polygon points="160,56 226,170 94,170" fill="none" stroke="#fbbf24" strokeWidth="1.5" opacity="0.6" />
+                      <line x1="110" y1="130" x2="210" y2="130" stroke="#fbbf24" strokeWidth="1.2" opacity="0.6" />
+                    </>
+                  )}
+                  {activeSpirit.element === 'earth' && (
+                    <>
+                      <polygon points="160,264 226,150 94,150" fill="none" stroke="#34d399" strokeWidth="1.5" opacity="0.6" />
+                      <line x1="110" y1="190" x2="210" y2="190" stroke="#34d399" strokeWidth="1.2" opacity="0.6" />
+                    </>
+                  )}
+
+                  {/* Connolly / Gematria Crossbar & Sigil Line Trace */}
+                  {activeTablet && activeTablet.sigilPath.length > 1 && (
+                    <g transform="translate(40, 40) scale(0.75)">
+                      {activeTablet.sigilPath.map((step, idx) => {
+                        if (idx === 0) return null;
+                        const prev = activeTablet.sigilPath[idx - 1];
+                        const x1 = 20 + prev.col * 31;
+                        const y1 = 20 + prev.row * 31;
+                        const x2 = 20 + step.col * 31;
+                        const y2 = 20 + step.row * 31;
+                        return (
+                          <line
+                            key={idx}
+                            x1={x1}
+                            y1={y1}
+                            x2={x2}
+                            y2={y2}
+                            stroke="#fbbf24"
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                          />
+                        );
+                      })}
+
+                      {/* Start Circle */}
+                      {activeTablet.sigilPath[0] && (
+                        <circle
+                          cx={20 + activeTablet.sigilPath[0].col * 31}
+                          cy={20 + activeTablet.sigilPath[0].row * 31}
+                          r="6"
+                          fill="#dc2626"
+                          stroke="#fef2f2"
+                          strokeWidth="2"
+                        />
+                      )}
+
+                      {/* End Termination Crossbar */}
+                      {activeTablet.sigilPath.length > 1 && (
                         <line
-                          key={idx}
-                          x1={x1}
-                          y1={y1}
-                          x2={x2}
-                          y2={y2}
-                          stroke="#fbbf24"
-                          strokeWidth="3.5"
+                          x1={20 + activeTablet.sigilPath[activeTablet.sigilPath.length - 1].col * 31 - 8}
+                          y1={20 + activeTablet.sigilPath[activeTablet.sigilPath.length - 1].row * 31}
+                          x2={20 + activeTablet.sigilPath[activeTablet.sigilPath.length - 1].col * 31 + 8}
+                          y2={20 + activeTablet.sigilPath[activeTablet.sigilPath.length - 1].row * 31}
+                          stroke="#fef2f2"
+                          strokeWidth="3"
                           strokeLinecap="round"
                         />
-                      );
-                    })}
+                      )}
+                    </g>
+                  )}
 
-                    {/* Start Circle */}
-                    {activeTablet.sigilPath[0] && (
-                      <circle
-                        cx={20 + activeTablet.sigilPath[0].col * 31}
-                        cy={20 + activeTablet.sigilPath[0].row * 31}
-                        r="6"
-                        fill="#dc2626"
-                        stroke="#fef2f2"
-                        strokeWidth="2"
-                      />
-                    )}
-
-                    {/* End Termination Crossbar */}
-                    {activeTablet.sigilPath.length > 1 && (
-                      <line
-                        x1={20 + activeTablet.sigilPath[activeTablet.sigilPath.length - 1].col * 31 - 8}
-                        y1={20 + activeTablet.sigilPath[activeTablet.sigilPath.length - 1].row * 31}
-                        x2={20 + activeTablet.sigilPath[activeTablet.sigilPath.length - 1].col * 31 + 8}
-                        y2={20 + activeTablet.sigilPath[activeTablet.sigilPath.length - 1].row * 31}
-                        stroke="#fef2f2"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                      />
-                    )}
-                  </g>
-                )}
-
-                {/* Central Demonolatry Focus Point */}
-                <circle cx="160" cy="160" r="4" fill="#ffffff" />
-              </svg>
+                  {/* Central Demonolatry Focus Point */}
+                  <circle cx="160" cy="160" r="4" fill="#ffffff" />
+                </svg>
+              )}
             </div>
 
             <span className="text-[11px] font-mono text-neutral-400 mt-4 text-center">
-              Demonolatry Gematria Sigil & Classical Seal of {activeSpirit.name}
+              {sealMode === 'authentic_vector'
+                ? `Historical Ars Goetia Seal #${activeSpirit.goeticNumber} · ${activeSpirit.name}`
+                : `Demonolatry 9×9 Kamea Seal · ${activeSpirit.name}`}
             </span>
           </div>
 

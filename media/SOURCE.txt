@@ -1,0 +1,5 @@
+Fuente primaria: The Lesser Key of Solomon (Goetia),
+ed. S. L. MacGregor Mathers y Aleister Crowley, 1904 (dominio público).
+Escaneos vía Wikimedia Commons (Category:Ars Goetia sigils).
+Proceso: canal alfa -> mkbitmap -> potrace (SVG) -> rsvg-convert (PNG).
+Catálogo, fichas y fuentes: https://grimorium.lat

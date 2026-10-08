@@ -7,6 +7,7 @@ import {
   WillDesireBeliefSymbol,
   ishtarStarPoints,
 } from '../tree/LuciferianSymbols';
+import SacredSigil from '../sigils/SacredSigil';
 import { registerAudioContext } from '../audio/audioManager';
 import { Play, Square, Volume2, Timer, Sparkles, AlertTriangle, Headphones } from 'lucide-react';
 
@@ -181,7 +182,7 @@ export const LuciferMeditation: React.FC = () => {
   const [minutes, setMinutes] = useState<number>(5);
   const [customMinutes, setCustomMinutes] = useState<string>('');
   const [focalSymbol, setFocalSymbol] = useState<
-    'lucifer' | 'azhdaha' | 'ishtar' | 'alb' | 'will_desire_belief'
+    'lucifer' | 'baphomet' | 'baphomet_pentagram' | 'azhdaha' | 'ishtar' | 'alb' | 'will_desire_belief'
   >('lucifer');
   const [enn, setEnn] = useState<string>(() => localStorage.getItem(ENN_STORAGE_KEY) || DEFAULT_ENN);
   const [ennEnabled, setEnnEnabled] = useState<boolean>(true);
@@ -384,6 +385,12 @@ export const LuciferMeditation: React.FC = () => {
           {/* Sacred Focal Symbol, breathing */}
           <div style={{ transform: `scale(${scale})`, transition: 'transform 200ms linear' }}>
             {focalSymbol === 'lucifer' && <LuciferSigil size={220} glow />}
+            {focalSymbol === 'baphomet' && (
+              <SacredSigil variant="baphomet" size={220} glow color="#ef4444" />
+            )}
+            {focalSymbol === 'baphomet_pentagram' && (
+              <SacredSigil variant="baphomet_pentagram" size={220} glow color="#ef4444" />
+            )}
             {focalSymbol === 'azhdaha' && <AzhdahaSymbol size={220} glow />}
             {focalSymbol === 'ishtar' && <IshtarStar size={220} glow />}
             {focalSymbol === 'alb' && <AlbTalisman size={240} glow />}
@@ -452,6 +459,8 @@ export const LuciferMeditation: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {[
               { id: 'lucifer', label: 'Sigil of Lucifer', desc: 'Grimorium Verum' },
+              { id: 'baphomet', label: 'Sigil of Baphomet', desc: 'Solve et Coagula' },
+              { id: 'baphomet_pentagram', label: 'Baphomet Pentagram', desc: 'Goat of Mendes' },
               { id: 'azhdaha', label: 'Azhdaha Dragon', desc: 'Serpent of Darkness' },
               { id: 'ishtar', label: 'Star of Ishtar', desc: 'Morning Star Venus' },
               { id: 'will_desire_belief', label: 'Will, Desire & Belief', desc: 'Illumination Trine' },

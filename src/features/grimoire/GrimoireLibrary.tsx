@@ -4,6 +4,7 @@ import {
   GrimoireEntity,
 } from '../../db/grimoireSeeds';
 import { playEnnChantTone } from '../audio/audioManager';
+import SacredSigil from '../sigils/SacredSigil';
 import {
   BookOpen,
   Search,
@@ -214,6 +215,7 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
               className="bg-neutral-900 border border-neutral-800 rounded px-2.5 py-1 text-neutral-200 text-xs focus:border-red-500 focus:outline-none"
             >
               <option value="all">All Pantheons ({ALL_GRIMOIRE_ENTITIES.length})</option>
+              <option value="demonic_divinity">Demonic Divinities (Lucifer, Baphomet, etc.)</option>
               <option value="goetia">72 Goetia</option>
               <option value="dukante_family">39 Dukanté Hierarchs</option>
               <option value="draconian">Draconian & Chaos</option>
@@ -432,6 +434,27 @@ export const GrimoireLibrary: React.FC<GrimoireLibraryProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Sacred Vector Seal Visualizer */}
+              {(activeEntity.goeticNumber ||
+                activeEntity.slug === 'lucifer' ||
+                activeEntity.slug === 'baphomet') && (
+                <div className="flex items-center justify-center p-3 rounded-xl bg-black/80 border border-red-950/60 shadow-inner">
+                  <SacredSigil
+                    variant={
+                      activeEntity.slug === 'lucifer'
+                        ? 'lucifer'
+                        : activeEntity.slug === 'baphomet'
+                        ? 'baphomet'
+                        : activeEntity.goeticNumber || activeEntity.slug
+                    }
+                    size={160}
+                    glow
+                    color="#ef4444"
+                    alt={`${activeEntity.name} Sacred Sigil`}
+                  />
+                </div>
+              )}
 
               {/* Enn Chanting Station */}
               {activeEntity.enn && (

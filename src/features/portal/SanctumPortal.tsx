@@ -21,6 +21,7 @@ import {
 } from '../audio/subliminalAudio';
 import { AudioVisualizerCanvas } from '../audio/AudioVisualizerCanvas';
 import { SonicCodexModal } from '../audio/SonicCodexModal';
+import SacredSigil from '../sigils/SacredSigil';
 import {
   Play,
   Square,
@@ -44,7 +45,16 @@ interface SanctumPortalProps {
 }
 
 export type VisualPreset = 'ouroboros' | 'algol' | 'adversary' | 'sentinels' | 'black_mirror';
-export type FocalSymbolType = 'none' | 'lucifer' | 'ishtar' | 'azhdaha' | 'alb' | 'will_desire_belief';
+export type FocalSymbolType =
+  | 'none'
+  | 'lucifer'
+  | 'baphomet'
+  | 'baphomet_pentagram'
+  | 'ishtar'
+  | 'azhdaha'
+  | 'alb'
+  | 'will_desire_belief';
+export type CenterMode = 'sigil_only' | 'shader_geometry' | 'fusion' | 'pure_void';
 
 export const SanctumPortal: React.FC<SanctumPortalProps> = ({
   activeTunnel,
@@ -60,10 +70,20 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
   const [breathPatternKey, setBreathPatternKey] = useState<keyof typeof BREATH_PRESETS>('relax-4-7-8');
   const [currentPhase, setCurrentPhase] = useState<BreathPhase>('rest');
 
-  // Sacred Focal Symbol Overlay state
+  // Sacred Focal Symbol & Center Mirror Geometry state
   const [focalSymbol, setFocalSymbol] = useState<FocalSymbolType>('lucifer');
+  const [centerMode, setCenterMode] = useState<CenterMode>('sigil_only');
   const [focalPulse, setFocalPulse] = useState<boolean>(true);
   const [focalOpacity, setFocalOpacity] = useState<number>(0.85);
+
+  const handleSelectFocalSymbol = (sym: FocalSymbolType) => {
+    setFocalSymbol(sym);
+    if (sym === 'none') {
+      setCenterMode('shader_geometry');
+    } else {
+      setCenterMode('sigil_only');
+    }
+  };
 
   // Subliminal Audio Invocation state
   const [subliminalActive, setSubliminalActive] = useState<boolean>(false);
@@ -227,6 +247,7 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
           colorInner={activeColors.inner}
           colorOuter={activeColors.outer}
           glyphSeed={activeTunnel.number}
+          showInnerGlyph={centerMode === 'shader_geometry' || centerMode === 'fusion'}
           strobe={
             strobeEnabled
               ? { acknowledgedPhotosensitivityRisk: strobeRiskAcknowledged, hz: strobeHz, depth: 0.25 }
@@ -236,7 +257,7 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
         />
 
         {/* Sacred Center Focal Glyph Overlay */}
-        {focalSymbol !== 'none' && (
+        {(centerMode === 'sigil_only' || centerMode === 'fusion') && focalSymbol !== 'none' && (
           <div
             className="absolute pointer-events-none flex items-center justify-center transition-transform duration-700 ease-out z-10"
             style={{
@@ -253,6 +274,12 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
             }}
           >
             {focalSymbol === 'lucifer' && <LuciferSigil size={240} glow />}
+            {focalSymbol === 'baphomet' && (
+              <SacredSigil variant="baphomet" size={240} glow color="#ef4444" />
+            )}
+            {focalSymbol === 'baphomet_pentagram' && (
+              <SacredSigil variant="baphomet_pentagram" size={240} glow color="#ef4444" />
+            )}
             {focalSymbol === 'ishtar' && <IshtarStar size={240} glow />}
             {focalSymbol === 'azhdaha' && <AzhdahaSymbol size={260} glow />}
             {focalSymbol === 'alb' && <AlbTalisman size={260} glow />}
@@ -387,32 +414,95 @@ export const SanctumPortal: React.FC<SanctumPortalProps> = ({
           </select>
         </div>
 
-        {/* Sacred Focal Glyphs Selector */}
-        <div className="p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 flex flex-col gap-2.5">
+        {/* Sacred Center & Focal Glyph Controls */}
+        <div className="p-4 rounded-xl bg-neutral-950/80 border border-neutral-800 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h3 className="font-serif text-xs font-bold tracking-wider uppercase text-neutral-200 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Sacred Mirror Focal Glyph
+              Portal Center Configuration
             </h3>
-            <span className="text-[10px] font-mono text-amber-400 font-bold">
-              {focalSymbol.toUpperCase()}
+            <span className="text-[10px] font-mono text-amber-400 font-bold uppercase">
+              {centerMode.replace('_', ' ')}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono">
+          {/* Center Display Mode Tabs */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-neutral-900/90 rounded-lg border border-neutral-800 text-[10px] font-mono">
+            <button
+              onClick={() => {
+                setCenterMode('sigil_only');
+                if (focalSymbol === 'none') setFocalSymbol('lucifer');
+              }}
+              title="Clean obsidian mirror backdrop showing exclusively the sacred focal sigil with zero geometry clash"
+              className={`py-1.5 px-2 rounded text-center transition-all ${
+                centerMode === 'sigil_only'
+                  ? 'bg-red-950 border border-red-600 text-white font-bold shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              Sigil Only
+            </button>
+            <button
+              onClick={() => {
+                setCenterMode('shader_geometry');
+                setFocalSymbol('none');
+              }}
+              title="Pure counter-rotating Algol Chaos Star & Inverted Pentagram GLSL shader without overlay sigils"
+              className={`py-1.5 px-2 rounded text-center transition-all ${
+                centerMode === 'shader_geometry'
+                  ? 'bg-red-950 border border-red-600 text-white font-bold shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              Shader Geo
+            </button>
+            <button
+              onClick={() => {
+                setCenterMode('fusion');
+                if (focalSymbol === 'none') setFocalSymbol('lucifer');
+              }}
+              title="Dual composite layer: sacred sigil floating over counter-rotating shader geometry"
+              className={`py-1.5 px-2 rounded text-center transition-all ${
+                centerMode === 'fusion'
+                  ? 'bg-red-950 border border-red-600 text-white font-bold shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              Dual Fusion
+            </button>
+            <button
+              onClick={() => {
+                setCenterMode('pure_void');
+                setFocalSymbol('none');
+              }}
+              title="Pristine scrying obsidian mirror: only outer cuneiform bands & rising black flame embers"
+              className={`py-1.5 px-2 rounded text-center transition-all ${
+                centerMode === 'pure_void'
+                  ? 'bg-red-950 border border-red-600 text-white font-bold shadow-[0_0_8px_rgba(239,68,68,0.4)]'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+            >
+              Pure Void
+            </button>
+          </div>
+
+          {/* Focal Symbol Selector Buttons */}
+          <div className="grid grid-cols-2 gap-1.5 text-[11px] font-mono pt-1">
             {(
               [
                 ['lucifer', 'Sigil of Lucifer'],
+                ['baphomet', 'Sigil of Baphomet'],
+                ['baphomet_pentagram', 'Baphomet Pentagram'],
                 ['ishtar', 'Star of Ishtar (8-pt)'],
                 ['azhdaha', 'Azhdaha Black Dragon'],
                 ['will_desire_belief', 'Will, Desire & Belief'],
                 ['alb', 'ALB Talisman'],
-                ['none', 'Pure Void Mirror'],
+                ['none', 'No Overlay Sigil'],
               ] as [FocalSymbolType, string][]
             ).map(([symId, label]) => (
               <button
                 key={symId}
-                onClick={() => setFocalSymbol(symId)}
+                onClick={() => handleSelectFocalSymbol(symId)}
                 className={`px-2.5 py-1.5 rounded text-left transition-all truncate ${
                   focalSymbol === symId
                     ? 'bg-red-950 border border-red-600 text-white font-bold shadow-[0_0_10px_rgba(220,38,38,0.4)]'

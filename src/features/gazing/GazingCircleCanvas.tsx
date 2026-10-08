@@ -71,6 +71,8 @@ export interface GazingCircleCanvasProps {
   colorOuter?: THREE.ColorRepresentation;
   /** Changes the procedural glyph script (e.g. tunnel number). */
   glyphSeed?: number;
+  /** When false, clears the inner chaos star and pentagram for uncluttered focal sigil meditation */
+  showInnerGlyph?: boolean;
   strobe?: StrobeOptions | null;
   paused?: boolean;
   onBreathPhase?: (phase: BreathPhase) => void;
@@ -97,7 +99,7 @@ function usePrefersReducedMotion() {
 type PlaneProps = Required<
   Pick<GazingCircleCanvasProps, 'breathPattern' | 'rotationSpeed' | 'mirrorDistortion' | 'blur' | 'glyphSeed' | 'paused'>
 > &
-  Pick<GazingCircleCanvasProps, 'strobe' | 'onBreathPhase' | 'colorInner' | 'colorOuter'> & { reducedMotion: boolean };
+  Pick<GazingCircleCanvasProps, 'strobe' | 'onBreathPhase' | 'colorInner' | 'colorOuter' | 'showInnerGlyph'> & { reducedMotion: boolean };
 
 function GazingPlane(props: PlaneProps) {
   // Latest props in a ref so useFrame never captures stale values and uniforms are never re-created.
@@ -121,6 +123,7 @@ function GazingPlane(props: PlaneProps) {
       uColorA: { value: new THREE.Color('#ff3b2f') },
       uColorB: { value: new THREE.Color('#6a1bff') },
       uGlyphSeed: { value: 0 },
+      uInnerGlyph: { value: 1.0 },
     }),
     [],
   );
@@ -162,6 +165,7 @@ function GazingPlane(props: PlaneProps) {
     uniforms.uBlur.value = THREE.MathUtils.clamp(p.blur, 0, 1);
     uniforms.uGain.value = gain;
     uniforms.uGlyphSeed.value = p.glyphSeed;
+    uniforms.uInnerGlyph.value = p.showInnerGlyph !== false ? 1.0 : 0.0;
   });
 
   return (
@@ -189,6 +193,7 @@ export function GazingCircleCanvas({
   colorInner = '#ff3b2f',
   colorOuter = '#6a1bff',
   glyphSeed = 11,
+  showInnerGlyph = true,
   strobe = null,
   paused = false,
   onBreathPhase,
@@ -217,6 +222,7 @@ export function GazingCircleCanvas({
           colorInner={colorInner}
           colorOuter={colorOuter}
           glyphSeed={glyphSeed}
+          showInnerGlyph={showInnerGlyph}
           strobe={strobe}
           paused={paused}
           onBreathPhase={onBreathPhase}
