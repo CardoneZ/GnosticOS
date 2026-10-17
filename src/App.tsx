@@ -11,6 +11,7 @@ import InsightDashboard from './features/insights/InsightDashboard';
 import GrimoireLibrary from './features/grimoire/GrimoireLibrary';
 import HermeticaWorkbench from './features/hermetica/HermeticaWorkbench';
 import LuciferMeditation from './features/meditation/LuciferMeditation';
+import DemonolatryAcademy from './features/demonolatry/DemonolatryAcademy';
 import IlluminationWorkbench from './features/illumination/IlluminationWorkbench';
 import NatalAstrolabe from './features/astrolabe/NatalAstrolabe';
 import CommandPalette from './features/navigation/CommandPalette';
@@ -129,17 +130,12 @@ export const App: React.FC = () => {
     setIsCommandPaletteOpen(false);
   };
 
-  const handleHermeticSendToJournal = (draft: {
-    title: string;
-    body_md: string;
-    working_type: string;
-    pre_state_label: string;
-    post_state_label: string;
-    resonance: number;
-  }) => {
+  const handleSendToJournal = (draft: Partial<JournalEntryData>) => {
     setJournalDraft(draft);
     setCurrentView('journal');
   };
+
+  const handleHermeticSendToJournal = handleSendToJournal;
 
   const handleOpenSigilForgeWithIntent = (intent: string) => {
     setSigilDraftIntent(intent);
@@ -235,7 +231,22 @@ export const App: React.FC = () => {
           />
         )}
 
-        {currentView === 'meditation' && <LuciferMeditation />}
+        {currentView === 'meditation' && (
+          <LuciferMeditation onSendToJournal={handleSendToJournal} />
+        )}
+
+        {currentView === 'demonolatry' && (
+          <DemonolatryAcademy
+            onSendToJournal={handleSendToJournal}
+            onNavigateToMeditation={() => setCurrentView('meditation')}
+            onNavigateToAstrolabe={() => setCurrentView('astrolabe')}
+            onNavigateToSigils={(intent) => {
+              if (intent) setSigilDraftIntent(intent);
+              setCurrentView('chaos');
+            }}
+            onTuneToPortal={handleTuneSpiritToPortal}
+          />
+        )}
 
         {currentView === 'astrolabe' && (
           <NatalAstrolabe

@@ -42,6 +42,7 @@ export const JournalWorkbench: React.FC<JournalWorkbenchProps> = ({
         resonance: initialDraft.resonance ?? 8,
         offerings: initialDraft.offerings || [],
         entities: initialDraft.entities || [],
+        meditation_record: initialDraft.meditation_record || null,
       };
       setEditingEntry(syntheticEntry);
       setIsEditing(true);
@@ -103,6 +104,7 @@ export const JournalWorkbench: React.FC<JournalWorkbenchProps> = ({
       onNewEntry={handleNew}
       onEditEntry={handleEdit}
       onDeleteEntry={handleDelete}
+      onRefreshEntries={loadEntries}
     />
   );
 };

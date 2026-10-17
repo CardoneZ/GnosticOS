@@ -1,3 +1,7 @@
+import { MeditationRecordData } from '../../platform/vault';
+
+export type { MeditationRecordData };
+
 export type WorkingType =
   | 'invocation'
   | 'evocation'
@@ -5,7 +9,8 @@ export type WorkingType =
   | 'dream'
   | 'daily_yap'
   | 'divination'
-  | 'elemental_balancing';
+  | 'elemental_balancing'
+  | 'meditation';
 
 export const WORKING_TYPE_LABELS: Record<WorkingType, { label: string; color: string }> = {
   invocation: { label: 'Invocation', color: 'border-red-600/70 bg-red-950/40 text-red-200' },
@@ -15,6 +20,7 @@ export const WORKING_TYPE_LABELS: Record<WorkingType, { label: string; color: st
   daily_yap: { label: 'Stream of Thought / Daily Yap', color: 'border-amber-600/70 bg-amber-950/40 text-amber-200' },
   divination: { label: 'Divination / Tarot', color: 'border-yellow-600/70 bg-yellow-950/40 text-yellow-200' },
   elemental_balancing: { label: 'Elemental Balancing', color: 'border-emerald-600/70 bg-emerald-950/40 text-emerald-200' },
+  meditation: { label: 'Meditation & Trance Record', color: 'border-rose-600/70 bg-rose-950/40 text-rose-200' },
 };
 
 export const PRE_STATE_PRESETS = [

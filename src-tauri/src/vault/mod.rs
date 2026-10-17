@@ -76,6 +76,7 @@ pub struct JournalEntryPayload {
     pub post_state_label: Option<String>,
     pub offerings: Vec<OfferingPayload>,
     pub entities: Vec<EntityPresencePayload>,
+    pub meditation_record: Option<serde_json::Value>,
 }
 
 pub fn get_vault_path(app: &AppHandle) -> std::result::Result<PathBuf, String> {
@@ -237,6 +238,7 @@ pub fn save_journal_entry(
         "visions": entry.visions,
         "pre_state_label": entry.pre_state_label,
         "post_state_label": entry.post_state_label,
+        "meditation_record": entry.meditation_record,
     });
     let ciphertext_bytes = serde_json::to_vec(&content_json).map_err(|e| e.to_string())?;
     let dummy_nonce = vec![0u8; 12];
@@ -392,6 +394,8 @@ pub fn fetch_journal_entries(
         let pre_state_label = content_json["pre_state_label"].as_str().map(|s| s.to_string());
         let post_state_label = content_json["post_state_label"].as_str().map(|s| s.to_string());
 
+        let meditation_record = content_json.get("meditation_record").cloned();
+
         // Fetch offerings for this entry
         let mut off_stmt = conn
             .prepare("SELECT kind, quantity, entity_id FROM journal_offerings WHERE entry_id = ?1")
@@ -450,6 +454,7 @@ pub fn fetch_journal_entries(
             post_state_label,
             offerings,
             entities: entities_presence,
+            meditation_record,
         });
     }
 
@@ -470,4 +475,40 @@ pub fn delete_journal_entry(
     ).map_err(|e| e.to_string())?;
 
     Ok(true)
+}
+
+#[tauri::command]
+pub fn export_vault_backup(state: State<'_, VaultState>) -> Result<String, String> {
+    let entries = fetch_journal_entries(state)?;
+    let backup_json = serde_json::json!({
+        "schema_version": 1,
+        "backup_type": "gnosticos_vault_journal",
+        "exported_at": chrono::Utc::now().to_rfc3339(),
+        "entries": entries,
+    });
+    serde_json::to_string_pretty(&backup_json).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn import_vault_backup(
+    state: State<'_, VaultState>,
+    backup_json_str: String,
+) -> Result<usize, String> {
+    let parsed: serde_json::Value =
+        serde_json::from_str(&backup_json_str).map_err(|e| format!("Invalid JSON: {}", e))?;
+
+    let entries_val = parsed
+        .get("entries")
+        .or_else(|| parsed.as_array().map(|_| &parsed))
+        .ok_or("No entries array found in backup")?;
+
+    let entries: Vec<JournalEntryPayload> = serde_json::from_value(entries_val.clone())
+        .map_err(|e| format!("Failed to parse entries: {}", e))?;
+
+    let count = entries.len();
+    for entry in entries {
+        save_journal_entry(state.clone(), entry)?;
+    }
+
+    Ok(count)
 }

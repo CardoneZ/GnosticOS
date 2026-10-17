@@ -39,6 +39,20 @@ export interface EntityPresenceData {
   invoked: boolean;
 }
 
+export interface MeditationRecordData {
+  duration_minutes?: number | string;
+  description?: string;
+  felt_before?: string;
+  felt_during?: string;
+  felt_after?: string;
+  mind_popups?: string;
+  smells?: string;
+  sounds?: string;
+  physical_sensations?: string;
+  emotional_sensations?: string;
+  thoughts_comments?: string;
+}
+
 export interface JournalEntryData {
   id: string;
   ritual_at: string;
@@ -64,6 +78,7 @@ export interface JournalEntryData {
   post_state_label?: string | null;
   offerings: OfferingData[];
   entities: EntityPresenceData[];
+  meditation_record?: MeditationRecordData | null;
 }
 
 // Fallback seed reference data
@@ -112,8 +127,15 @@ export function isTauriEnvironment(): boolean {
 export async function unlockVault(passphrase: string): Promise<boolean> {
   if (isTauriEnvironment()) {
     const { invoke } = await import('@tauri-apps/api/core');
-    return invoke<boolean>('unlock_vault', { passphrase });
+    const ok = await invoke<boolean>('unlock_vault', { passphrase });
+    if (ok) {
+      const { setActivePassphrase } = await import('../db/vaultRepository');
+      setActivePassphrase(passphrase);
+    }
+    return ok;
   }
+  const { setActivePassphrase } = await import('../db/vaultRepository');
+  setActivePassphrase(passphrase);
   sessionStorage.setItem('gnosticos_unlocked', 'true');
   return true;
 }
@@ -124,6 +146,7 @@ export async function lockVault(): Promise<void> {
     return invoke<void>('lock_vault');
   }
   sessionStorage.removeItem('gnosticos_unlocked');
+  sessionStorage.removeItem('gnosticos_active_key');
 }
 
 export async function getTunnels(): Promise<TunnelData[]> {
@@ -151,44 +174,53 @@ export async function getEntities(): Promise<EntityData[]> {
 }
 
 export async function saveJournalEntry(entry: JournalEntryData): Promise<boolean> {
-  if (isTauriEnvironment()) {
-    const { invoke } = await import('@tauri-apps/api/core');
-    return invoke<boolean>('save_journal_entry', { entry });
-  }
-  // Web fallback storage
-  const raw = localStorage.getItem('gnosticos_journal_entries') || '[]';
-  const list: JournalEntryData[] = JSON.parse(raw);
-  const idx = list.findIndex((e) => e.id === entry.id);
-  if (idx >= 0) {
-    list[idx] = entry;
-  } else {
-    list.unshift(entry);
-  }
-  localStorage.setItem('gnosticos_journal_entries', JSON.stringify(list));
-  return true;
+  const { sp_save_entry } = await import('../db/vaultRepository');
+  return sp_save_entry(entry);
 }
 
 export async function fetchJournalEntries(): Promise<JournalEntryData[]> {
-  if (isTauriEnvironment()) {
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      return await invoke<JournalEntryData[]>('fetch_journal_entries');
-    } catch (err) {
-      console.warn('Error fetching journal entries from vault:', err);
-    }
-  }
-  const raw = localStorage.getItem('gnosticos_journal_entries') || '[]';
-  return JSON.parse(raw);
+  const { sp_fetch_all_entries } = await import('../db/vaultRepository');
+  return sp_fetch_all_entries();
 }
 
 export async function deleteJournalEntry(id: string): Promise<boolean> {
+  const { sp_delete_entry } = await import('../db/vaultRepository');
+  return sp_delete_entry(id);
+}
+
+export async function exportVaultBackup(): Promise<string> {
   if (isTauriEnvironment()) {
-    const { invoke } = await import('@tauri-apps/api/core');
-    return invoke<boolean>('delete_journal_entry', { id });
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      return await invoke<string>('export_vault_backup');
+    } catch (err) {
+      console.warn('Tauri export backup failed, using web repository:', err);
+    }
   }
-  const raw = localStorage.getItem('gnosticos_journal_entries') || '[]';
-  const list: JournalEntryData[] = JSON.parse(raw);
-  const filtered = list.filter((e) => e.id !== id);
-  localStorage.setItem('gnosticos_journal_entries', JSON.stringify(filtered));
-  return true;
+  const { sp_export_backup_json } = await import('../db/vaultRepository');
+  return sp_export_backup_json();
+}
+
+export async function importVaultBackup(jsonStr: string): Promise<{ imported: number; total: number }> {
+  if (isTauriEnvironment()) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const count = await invoke<number>('import_vault_backup', { backupJsonStr: jsonStr });
+      return { imported: count, total: count };
+    } catch (err) {
+      console.warn('Tauri import backup failed, using web repository:', err);
+    }
+  }
+  const { sp_import_backup_json } = await import('../db/vaultRepository');
+  return sp_import_backup_json(jsonStr);
+}
+
+export async function getRollingBackups() {
+  const { sp_get_rolling_backups } = await import('../db/vaultRepository');
+  return sp_get_rolling_backups();
+}
+
+export async function restoreRollingBackup(snapshotId: string): Promise<boolean> {
+  const { sp_restore_rolling_backup } = await import('../db/vaultRepository');
+  return sp_restore_rolling_backup(snapshotId);
 }

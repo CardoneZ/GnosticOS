@@ -4,6 +4,7 @@ import {
   OfferingData,
   EntityData,
   TunnelData,
+  MeditationRecordData,
 } from '../../platform/vault';
 import { getCurrentMagickalTiming, MagickalTiming } from '../ephemeris/planetaryHours';
 import {
@@ -25,6 +26,12 @@ import {
   MicOff,
   Radio,
   FileText,
+  Activity,
+  HeartPulse,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
 } from 'lucide-react';
 
 interface JournalEntryFormProps {
@@ -57,6 +64,44 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
   );
   const [postStateLabel, setPostStateLabel] = useState(
     initialEntry?.post_state_label || POST_STATE_PRESETS[0],
+  );
+
+  // Meditation Structured Protocol States
+  const [meditationDesc, setMeditationDesc] = useState<string>(
+    initialEntry?.meditation_record?.description || '',
+  );
+  const [meditationDuration, setMeditationDuration] = useState<string>(
+    initialEntry?.meditation_record?.duration_minutes?.toString() || '15',
+  );
+  const [feltBefore, setFeltBefore] = useState<string>(
+    initialEntry?.meditation_record?.felt_before || initialEntry?.pre_state_label || '',
+  );
+  const [feltDuring, setFeltDuring] = useState<string>(
+    initialEntry?.meditation_record?.felt_during || '',
+  );
+  const [feltAfter, setFeltAfter] = useState<string>(
+    initialEntry?.meditation_record?.felt_after || initialEntry?.post_state_label || '',
+  );
+  const [mindPopups, setMindPopups] = useState<string>(
+    initialEntry?.meditation_record?.mind_popups || '',
+  );
+  const [smells, setSmells] = useState<string>(
+    initialEntry?.meditation_record?.smells || '',
+  );
+  const [sounds, setSounds] = useState<string>(
+    initialEntry?.meditation_record?.sounds || '',
+  );
+  const [physicalSensations, setPhysicalSensations] = useState<string>(
+    initialEntry?.meditation_record?.physical_sensations || '',
+  );
+  const [emotionalSensations, setEmotionalSensations] = useState<string>(
+    initialEntry?.meditation_record?.emotional_sensations || '',
+  );
+  const [thoughtsComments, setThoughtsComments] = useState<string>(
+    initialEntry?.meditation_record?.thoughts_comments || '',
+  );
+  const [isMeditationExpanded, setIsMeditationExpanded] = useState<boolean>(
+    initialEntry?.working_type === 'meditation' || !!initialEntry?.meditation_record,
   );
 
   // Voice Dictation (Speech-to-Text) States
@@ -154,7 +199,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
     }
   };
 
-  const handleApplyTemplate = (type: 'ritual' | 'dream' | 'yap') => {
+  const handleApplyTemplate = (type: 'ritual' | 'dream' | 'yap' | 'meditation') => {
     const dateStr = new Date().toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
@@ -183,6 +228,17 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
       if (speechSupported && !isListening) {
         toggleVoiceDictation();
       }
+    } else if (type === 'meditation') {
+      setWorkingType('meditation');
+      setTitle(`Meditation & Ritual Log — ${dateStr}`);
+      setPreStateLabel('Physical Inertia / Seeking Gnosis');
+      setPostStateLabel('Inner Equilibrium / Illumination');
+      setIsMeditationExpanded(true);
+      if (!meditationDesc) setMeditationDesc('Timed Gazing & Somatic Meditation');
+      if (!meditationDuration) setMeditationDuration('15');
+      if (!feltBefore) setFeltBefore('Tension in shoulders, mental chatter');
+      if (!feltDuring) setFeltDuring('Theta entrainment, steady rhythmic breathing');
+      if (!feltAfter) setFeltAfter('Deep centered calm, heightened senses');
     } else {
       setWorkingType('invocation');
       setTitle(`Ritual Working — ${dateStr}`);
@@ -210,6 +266,51 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
     const entryId = initialEntry?.id || `entry-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const now = new Date();
 
+    const hasMeditationData =
+      workingType === 'meditation' ||
+      meditationDesc.trim() ||
+      feltBefore.trim() ||
+      feltDuring.trim() ||
+      feltAfter.trim() ||
+      mindPopups.trim() ||
+      smells.trim() ||
+      sounds.trim() ||
+      physicalSensations.trim() ||
+      emotionalSensations.trim() ||
+      thoughtsComments.trim();
+
+    const meditationRecordToSave: MeditationRecordData | null = hasMeditationData
+      ? {
+          duration_minutes: meditationDuration || '15',
+          description: meditationDesc.trim() || 'Meditation / Ritual Gnosis',
+          felt_before: feltBefore.trim(),
+          felt_during: feltDuring.trim(),
+          felt_after: feltAfter.trim(),
+          mind_popups: mindPopups.trim(),
+          smells: smells.trim(),
+          sounds: sounds.trim(),
+          physical_sensations: physicalSensations.trim(),
+          emotional_sensations: emotionalSensations.trim(),
+          thoughts_comments: thoughtsComments.trim(),
+        }
+      : null;
+
+    let finalBodyMd = bodyMd;
+    if (workingType === 'meditation' && (!bodyMd.trim() || bodyMd.trim().startsWith('### Meditation Record'))) {
+      finalBodyMd = `### Meditation Record (${now.toLocaleDateString()})
+
+**Meditation Description & Duration:** ${meditationDesc || 'Meditation'} (${meditationDuration || 15} minutes)
+**How I felt before:** ${feltBefore || 'N/A'}
+**How I felt during:** ${feltDuring || 'N/A'}
+**How I felt immediately afterward:** ${feltAfter || 'N/A'}
+**What kept popping into my mind:** ${mindPopups || 'None'}
+**Smells I noticed:** ${smells || 'None'}
+**Sounds I noticed:** ${sounds || 'None'}
+**Physical sensations & posture:** ${physicalSensations || 'None'}
+**Emotional sensations:** ${emotionalSensations || 'None'}
+**Thoughts or Comments:** ${thoughtsComments || 'None'}`;
+    }
+
     const entryToSave: JournalEntryData = {
       id: entryId,
       ritual_at: initialEntry?.ritual_at || now.toISOString(),
@@ -229,7 +330,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
       working_type: workingType,
       tunnel_id: tunnelId,
       title: title.trim() || 'Untitled Ritual',
-      body_md: bodyMd,
+      body_md: finalBodyMd,
       visions: visions.trim() || null,
       pre_state_label: preStateLabel,
       post_state_label: postStateLabel,
@@ -239,6 +340,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
         intensity: resonance,
         invoked: true,
       })),
+      meditation_record: meditationRecordToSave,
     };
 
     await onSave(entryToSave);
@@ -386,6 +488,18 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
             <Radio className="w-3.5 h-3.5 text-amber-400" />
             <span>Stream / Yap</span>
           </button>
+          <button
+            type="button"
+            onClick={() => handleApplyTemplate('meditation')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 ${
+              workingType === 'meditation'
+                ? 'bg-rose-950/80 border border-rose-700/60 text-rose-200 font-bold'
+                : 'bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5 text-rose-400" />
+            <span>Meditation Log</span>
+          </button>
         </div>
       </div>
 
@@ -412,7 +526,7 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
             <label className="text-xs font-mono uppercase tracking-wider text-neutral-400">
               Category / Classification:
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {(Object.keys(WORKING_TYPE_LABELS) as WorkingType[]).map((wt) => {
                 const info = WORKING_TYPE_LABELS[wt];
                 const isSelected = workingType === wt;
@@ -420,7 +534,10 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
                   <button
                     type="button"
                     key={wt}
-                    onClick={() => setWorkingType(wt)}
+                    onClick={() => {
+                      setWorkingType(wt);
+                      if (wt === 'meditation') setIsMeditationExpanded(true);
+                    }}
                     className={`px-3 py-2 rounded-lg text-xs font-mono text-left border transition-all ${
                       isSelected
                         ? `${info.color} shadow-[0_0_12px_rgba(220,38,38,0.3)] font-bold`
@@ -432,6 +549,221 @@ export const JournalEntryForm: React.FC<JournalEntryFormProps> = ({
                 );
               })}
             </div>
+          </div>
+
+          {/* Dedicated Somatic & Sensory Meditation Protocol Form */}
+          <div className="glass-panel p-5 rounded-xl border border-rose-900/60 bg-gradient-to-b from-rose-950/20 via-black to-neutral-950 flex flex-col gap-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-rose-900/40 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-rose-950 flex items-center justify-center border border-rose-800/60">
+                  <HeartPulse className="w-4 h-4 text-rose-400" />
+                </div>
+                <div>
+                  <h3 className="font-serif text-base font-bold text-white flex items-center gap-2">
+                    Recording Your Meditations
+                    <span className="text-[10px] font-mono text-rose-400 uppercase tracking-widest px-2 py-0.5 rounded bg-rose-950/70 border border-rose-800/50">
+                      Somatic Protocol
+                    </span>
+                  </h3>
+                  <p className="text-[11px] font-mono text-neutral-400">
+                    Connolly Demonolatry Standards · Somatic, Sensory &amp; Mental Observation
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMeditationExpanded((prev) => !prev)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-mono text-neutral-300 transition-all"
+              >
+                {isMeditationExpanded ? (
+                  <>
+                    <ChevronUp className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Collapse Form</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Expand All 10 Inputs</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Compassionate Reflection Protocol Alert */}
+            <div className="p-3.5 rounded-lg bg-rose-950/30 border border-rose-900/50 text-xs text-neutral-200 leading-relaxed flex items-start gap-3">
+              <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex flex-col gap-1">
+                <span className="text-amber-300 font-bold font-mono text-[11px] uppercase tracking-wider">
+                  Mindful Reflection Guidance
+                </span>
+                <p className="text-neutral-300">
+                  If you cannot fill in all of the spaces right away — don't force it. Allow yourself time to reflect on the experience and then go back and fill in the blanks at a later time. Noting how you felt is especially important.
+                </p>
+              </div>
+            </div>
+
+            {isMeditationExpanded && (
+              <div className="flex flex-col gap-4 mt-1">
+                {/* 1 & 2: Meditation Description & Duration */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2 flex flex-col gap-1.5">
+                    <label className="text-[11px] font-mono uppercase text-neutral-400">
+                      Meditation Description:
+                    </label>
+                    <input
+                      type="text"
+                      value={meditationDesc}
+                      onChange={(e) => setMeditationDesc(e.target.value)}
+                      placeholder="e.g. Luciferian Sigil Gazing, Duke Berith commune, breath entrainment..."
+                      className="w-full bg-black/80 border border-neutral-700 rounded-lg px-3 py-2 text-xs font-sans text-neutral-100 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-mono uppercase text-neutral-400">
+                      Duration (Minutes):
+                    </label>
+                    <input
+                      type="text"
+                      value={meditationDuration}
+                      onChange={(e) => setMeditationDuration(e.target.value)}
+                      placeholder="e.g. 15 or 30 min"
+                      className="w-full bg-black/80 border border-neutral-700 rounded-lg px-3 py-2 text-xs font-mono text-neutral-100 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 3, 4, 5: Tri-Phase Feeling Progression */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-mono uppercase text-neutral-400">
+                      1. How I felt BEFORE the meditation:
+                    </label>
+                    <textarea
+                      value={feltBefore}
+                      onChange={(e) => setFeltBefore(e.target.value)}
+                      rows={3}
+                      placeholder="Physical inertia, mental chatter, tension, fatigue, emotional agitation..."
+                      className="w-full bg-black/80 border border-neutral-700 rounded-lg p-2.5 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none resize-none"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-mono uppercase text-neutral-400">
+                      2. How I felt DURING the meditation:
+                    </label>
+                    <textarea
+                      value={feltDuring}
+                      onChange={(e) => setFeltDuring(e.target.value)}
+                      rows={3}
+                      placeholder="Pulsing third eye, floating sensations, deepening theta wave, timeless presence..."
+                      className="w-full bg-black/80 border border-neutral-700 rounded-lg p-2.5 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none resize-none"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-mono uppercase text-neutral-400">
+                      3. How I felt IMMEDIATELY AFTERWARD:
+                    </label>
+                    <textarea
+                      value={feltAfter}
+                      onChange={(e) => setFeltAfter(e.target.value)}
+                      rows={3}
+                      placeholder="Heightened awareness, empowered sovereign calm, awakened black flame..."
+                      className="w-full bg-black/80 border border-neutral-700 rounded-lg p-2.5 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none resize-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 6: Mind Pop-ups */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-mono uppercase text-neutral-400">
+                    What kept popping into my mind during the meditation?
+                  </label>
+                  <textarea
+                    value={mindPopups}
+                    onChange={(e) => setMindPopups(e.target.value)}
+                    rows={2}
+                    placeholder="Recurring worries, mundane tasks, sudden astral flashes, words in foreign tongues..."
+                    className="w-full bg-black/80 border border-neutral-700 rounded-lg p-2.5 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none resize-none"
+                  />
+                </div>
+
+                {/* 7 & 8: Smells & Sounds */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-mono uppercase text-neutral-400">
+                      👃 Smells I noticed:
+                    </label>
+                    <input
+                      type="text"
+                      value={smells}
+                      onChange={(e) => setSmells(e.target.value)}
+                      placeholder="Incense, frankincense, sandalwood, rose, metallic/ozone, sulfur, sweet earth..."
+                      className="w-full bg-black/80 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-mono uppercase text-neutral-400">
+                      👂 Sounds I noticed:
+                    </label>
+                    <input
+                      type="text"
+                      value={sounds}
+                      onChange={(e) => setSounds(e.target.value)}
+                      placeholder="Binaural drone, ringing in left ear, candle flickers, room acoustics, spirit whisper..."
+                      className="w-full bg-black/80 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* 9: Physical sensations with Posture Diagnostic Note */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-[11px] font-mono uppercase text-neutral-400">
+                    🧘 Physical sensations (Posture, Tension &amp; Somatics):
+                  </label>
+                  <textarea
+                    value={physicalSensations}
+                    onChange={(e) => setPhysicalSensations(e.target.value)}
+                    rows={2}
+                    placeholder="Cramping in legs, muscles tensing in neck, tingling in palms, spine alignment, warmth..."
+                    className="w-full bg-black/80 border border-neutral-700 rounded-lg p-2.5 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none resize-none"
+                  />
+                  <div className="p-3 rounded-lg bg-neutral-900/90 border border-amber-900/40 text-[11px] text-neutral-300 leading-relaxed flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-amber-400">Posture Diagnostic Tip:</strong> Did you feel cramping in your legs? Were you aware of certain muscles tensing up? These could be meditation posture problems, which could be indicative that you need to find a different sitting position (e.g. utilizing a zafu meditation cushion, kneeling seiza, or an upright ergonomic chair).
+                    </div>
+                  </div>
+                </div>
+
+                {/* 10: Emotional sensations */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-mono uppercase text-neutral-400">
+                    ❤️ Emotional sensations:
+                  </label>
+                  <textarea
+                    value={emotionalSensations}
+                    onChange={(e) => setEmotionalSensations(e.target.value)}
+                    rows={2}
+                    placeholder="Profound awe, release of sorrow, sovereign confidence, ecstasy, serenity, fearlessness..."
+                    className="w-full bg-black/80 border border-neutral-700 rounded-lg p-2.5 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none resize-none"
+                  />
+                </div>
+
+                {/* 11: Thoughts or Comments */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-mono uppercase text-neutral-400">
+                    💭 Thoughts or Comments:
+                  </label>
+                  <textarea
+                    value={thoughtsComments}
+                    onChange={(e) => setThoughtsComments(e.target.value)}
+                    rows={3}
+                    placeholder="Epiphanies, philosophical insights, messages received, queries for your teacher..."
+                    className="w-full bg-black/80 border border-neutral-700 rounded-lg p-2.5 text-xs text-neutral-200 focus:border-rose-500 focus:outline-none resize-none"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Markdown Body Editor with Voice Dictation */}

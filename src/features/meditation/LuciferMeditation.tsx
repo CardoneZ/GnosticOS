@@ -12,9 +12,14 @@ import {
   rankNaturalVoices,
   pickBestNaturalVoice,
 } from '../audio/audioManager';
-import { Play, Square, Volume2, Timer, Sparkles, AlertTriangle, Headphones } from 'lucide-react';
+import { Play, Square, Volume2, Timer, Sparkles, AlertTriangle, Headphones, BookOpen } from 'lucide-react';
 import SanctumDropdown from '../ui/SanctumDropdown';
 import { getBrainwaveBand, QUICK_BRAINWAVE_PRESETS } from '../audio/brainwaveConstants';
+import { JournalEntryData } from '../../platform/vault';
+
+export interface LuciferMeditationProps {
+  onSendToJournal?: (draft: Partial<JournalEntryData>) => void;
+}
 
 /**
  * GnosticOS — Lucifer Illumination Meditation
@@ -177,7 +182,7 @@ function stopDrone(d: Drone, fade: number) {
 // -----------------------------------------------------------------------------
 // Component
 // -----------------------------------------------------------------------------
-export const LuciferMeditation: React.FC = () => {
+export const LuciferMeditation: React.FC<LuciferMeditationProps> = ({ onSendToJournal }) => {
   const [minutes, setMinutes] = useState<number>(5);
   const [customMinutes, setCustomMinutes] = useState<string>('');
   const [focalSymbol, setFocalSymbol] = useState<
@@ -436,25 +441,74 @@ export const LuciferMeditation: React.FC = () => {
   // ---------------------------------------------------------------------------
   // Setup view
   // ---------------------------------------------------------------------------
+  const handleLogToJournal = () => {
+    if (!onSendToJournal) return;
+    onSendToJournal({
+      title: `Lucifer Illumination Meditation (${focalSymbol})`,
+      working_type: 'meditation',
+      pre_state_label: 'Seeking Illumination',
+      post_state_label: 'Luciferian Illumination',
+      resonance: 9,
+      meditation_record: {
+        duration_minutes: minutes,
+        description: `Lucifer Illumination Sigil Gazing (${focalSymbol}) with ${binauralBeatHz} Hz theta entrainment drone and enn recitation`,
+        felt_before: '',
+        felt_during: 'Rhythmic breathwork, deep theta entrainment',
+        felt_after: 'Empowered calm, awakened inner flame',
+        mind_popups: '',
+        smells: 'Incense / Candle flame',
+        sounds: `${binauralBeatHz} Hz drone, bell harmonics`,
+        physical_sensations: '',
+        emotional_sensations: 'Sovereign lucidity & gnosis',
+        thoughts_comments: '',
+      },
+    });
+  };
+
   return (
     <div className="w-full h-full overflow-y-auto bg-black text-neutral-200 p-6">
       <div className="max-w-3xl mx-auto flex flex-col gap-6">
-        <header className="flex items-center gap-4 border-b border-neutral-800 pb-4">
-          <SacredSigil variant="lucifer" size={56} glow color="#ef4444" alt="Sigil of Lucifer" />
-          <div>
-            <h1 className="font-decorative text-2xl font-bold tracking-wider text-white">
-              Lucifer Illumination Meditation
-            </h1>
-            <p className="text-xs font-mono text-neutral-400">
-              Patron sigil gazing · breathwork · theta drone · enn chanting &amp; subliminal affirmations
-            </p>
+        <header className="flex items-center justify-between border-b border-neutral-800 pb-4">
+          <div className="flex items-center gap-4">
+            <SacredSigil variant="lucifer" size={56} glow color="#ef4444" alt="Sigil of Lucifer" />
+            <div>
+              <h1 className="font-decorative text-2xl font-bold tracking-wider text-white">
+                Lucifer Illumination Meditation
+              </h1>
+              <p className="text-xs font-mono text-neutral-400">
+                Patron sigil gazing · breathwork · theta drone · enn chanting &amp; subliminal affirmations
+              </p>
+            </div>
           </div>
+          {onSendToJournal && (
+            <button
+              onClick={handleLogToJournal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-xs font-mono text-neutral-300 hover:text-white transition-all shrink-0"
+              title="Open the Journal form to record meditation experience"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-rose-400" />
+              <span>Record in Journal</span>
+            </button>
+          )}
         </header>
 
         {completed && (
-          <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-800/50 text-sm text-amber-100 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            Session complete. The Black Flame burns brightly within.
+          <div className="p-4 rounded-xl bg-gradient-to-r from-amber-950/40 via-red-950/30 to-black border border-amber-800/60 text-sm text-amber-100 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+              <div>
+                <span className="font-bold text-white block">Session Complete</span>
+                <span className="text-xs text-amber-200/90">The Black Flame burns brightly within. Allow yourself time to reflect.</span>
+              </div>
+            </div>
+            {onSendToJournal && (
+              <button
+                onClick={handleLogToJournal}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-serif text-xs font-bold tracking-wider uppercase transition-all shadow-[0_0_12px_rgba(245,158,11,0.4)] shrink-0 flex items-center gap-2"
+              >
+                <BookOpen className="w-4 h-4" /> Record Experience in Journal
+              </button>
+            )}
           </div>
         )}
 

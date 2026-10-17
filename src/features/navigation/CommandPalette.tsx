@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   Crown,
   Orbit,
+  GraduationCap,
 } from 'lucide-react';
 import { HERMETIC_CHAPTERS } from '../hermetica/hermeticCorpus';
 
@@ -189,6 +190,18 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         icon: Flame,
         onSelect: () => {
           onNavigate('meditation');
+          onClose();
+        },
+      },
+      {
+        id: 'nav-demonolatry',
+        category: 'tool',
+        title: 'Demonolatry Academy & Practice Codex',
+        subtitle: 'S. Connolly 5 Lessons, 9 Divinities Prayer Cord & 5-Demons Patron Selector',
+        badge: 'Connolly',
+        icon: GraduationCap,
+        onSelect: () => {
+          onNavigate('demonolatry');
           onClose();
         },
       },

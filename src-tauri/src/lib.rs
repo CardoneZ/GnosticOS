@@ -18,6 +18,8 @@ pub fn run() {
             vault::save_journal_entry,
             vault::fetch_journal_entries,
             vault::delete_journal_entry,
+            vault::export_vault_backup,
+            vault::import_vault_backup,
         ])
         .run(tauri::generate_context!())
         .expect("error while running GnosticOS application");
